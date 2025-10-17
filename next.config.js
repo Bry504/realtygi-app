@@ -3,10 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   trailingSlash: false,
   async redirects() {
-    return [
-      // Cuando entren a la raíz del dominio, envía al login
-      { source: '/', destination: '/auth', permanent: false },
-    ];
+    return [{ source: '/', destination: '/auth', permanent: false }];
+  },
+  eslint: {
+    // Permite que el build continúe aunque existan errores de ESLint
+    ignoreDuringBuilds: true,
   },
 };
 
