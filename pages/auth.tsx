@@ -171,8 +171,8 @@ export default function AuthPage() {
         }
 
         .btn {
-          width: 100%; height: 44px; margin-top: 18px;
-          background: #a38147; color: #fff; font-weight: bold;
+          width: 100%; height: 46px; margin-top: 18px;
+          background: #a38147; color: #fff; font-weight: bold;font-size: 17px;
           border: none; border-radius: 6px; cursor: pointer;
           transition: background .2s ease;
         }
@@ -180,15 +180,15 @@ export default function AuthPage() {
 
         .forgot {
           display: block;
-          margin-top: 22px; /* un poco más abajo */
+          margin-top: 30px; /* un poco más abajo */
           color: #000;
           font-weight: 700; /* negrita */
           font-size: 14px;
           text-decoration: none;
         }
 
-        .cta { margin-top: 10px; color: #e6e0d4; font-size: 15px; }
-        .cta a { font-weight: bold; color: #ffffff; text-decoration: none; }
+        .cta { margin-top: 10px; color: #604a23; font-size: 15px; }
+        .cta a { font-weight: bold; color: #604a23; text-decoration: none; }
         .cta a:hover { text-decoration: underline; }
 
         .msg { margin-top: 6px; color: #604a23; font-size: 14px; }
