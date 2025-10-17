@@ -21,8 +21,9 @@ const Home: React.FC = () => {
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         <li style={{ marginBottom: 12 }}>
+          {/* OJO: sin /Realtygi porque Next lo añade solo */}
           <Link
-            href="/Realtygi/auth"
+            href="/auth"
             style={{
               padding: '10px 16px',
               background: '#111827',
@@ -36,7 +37,7 @@ const Home: React.FC = () => {
         </li>
         <li>
           <Link
-            href="/Realtygi/orden-de-requerimiento"
+            href="/orden-de-requerimiento"
             style={{
               padding: '10px 16px',
               background: '#e5e7eb',
