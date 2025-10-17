@@ -84,27 +84,42 @@ export default function AuthPage() {
 
       <style jsx>{`
         .wrap {
-          min-height: 100vh;
-          display: grid;
-          place-items: center;
-          background-image: url('/auth-bg.jpg'); /* coloca tu imagen en /public */
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
+         position: relative;
+         min-height: 100vh;
+         display: grid;
+         place-items: center;
+         background-image: url('/auth-bg.jpg');
+        background-size: cover;
+         background-position: center;
+         background-repeat: no-repeat;
           padding: 24px;
         }
+
+        .wrap::before {
+         content: "";
+         position: absolute;
+         inset: 0;
+          background: rgba(0, 0, 0, 0.45); /* <- capa negra semitransparente */
+         z-index: 0;
+        }
+
         .glass {
-          width: 100%;
-          max-width: 520px;
-          padding: 28px 26px 22px;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.18); /* capa translúcida */
-          backdrop-filter: blur(10px) saturate(140%);
-          -webkit-backdrop-filter: blur(10px) saturate(140%);
-          border: 1px solid rgba(255, 255, 255, 0.35);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-          color: #fff;
-          text-align: center;
+          position: relative;
+         z-index: 1; /* para estar encima del overlay */
+        /* resto igual que arriba */
+        }
+        .glass {
+        width: 100%;
+         max-width: 520px;
+        padding: 28px 26px 22px;
+         border-radius: 14px;
+         background: rgba(30, 30, 30, 0.45); /* <- antes 0.18 */
+         backdrop-filter: blur(14px) saturate(150%);
+         -webkit-backdrop-filter: blur(14px) saturate(150%);
+         border: 1px solid rgba(255, 255, 255, 0.25);
+         box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
+         color: #fff;
+        text-align: center;
         }
         h1 {
           margin: 8px 0 18px;
