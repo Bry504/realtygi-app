@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
-  const [remember, setRemember] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -14,11 +14,10 @@ export default function AuthPage() {
     setMsg(null);
     setLoading(true);
     try {
-      // TODO: conecta aquí tu auth real (Supabase, API, etc.)
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 800));
       setMsg('Ingreso exitoso.');
     } catch (_e: unknown) {
-      setMsg('Ocurrió un error');
+      setMsg('Ocurrió un error.');
     } finally {
       setLoading(false);
     }
@@ -27,181 +26,276 @@ export default function AuthPage() {
   return (
     <>
       <Head>
-        <title>Iniciar sesión — Realty GI</title>
+        <title>Iniciar Sesión — Realty Grupo Inmobiliario</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
       <main className="wrap">
+        <div className="overlay" />
         <div className="glass">
-          <h1>Iniciar sesión</h1>
+          <div className="logo">
+            <img src="/logo.png" alt="Logo Realty GI" />
+          </div>
+          <h1>Realty Grupo Inmobiliario</h1>
+          <p className="subtitle">Plataforma de separación de propiedades</p>
 
           <form onSubmit={onSubmit} className="form">
+            <label>Correo electrónico</label>
             <div className="field">
               <input
-                type="text"
-                placeholder="Usuario o correo"
+                type="email"
+                placeholder="tu@realtygi.pe"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
-            <div className="field">
+            <label>Contraseña</label>
+            <div className="field pwdWrap">
               <input
-                type="password"
-                placeholder="Contraseña"
+                type={showPwd ? 'text' : 'password'}
+                placeholder="••••••••"
                 value={pwd}
                 onChange={(e) => setPwd(e.target.value)}
                 required
               />
-            </div>
-
-            <div className="row">
-              <label className="remember">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                <span>Recuérdame</span>
-              </label>
-
-              <Link href="#" className="forgot">¿Olvidaste tu contraseña?</Link>
+              <button
+                type="button"
+                className="eyeBtn"
+                onClick={() => setShowPwd((s) => !s)}
+                aria-label={showPwd ? 'Ocultar contraseña' : 'Ver contraseña'}
+              >
+                {showPwd ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-0.53 1.23-1.3 2.42-2.27 3.45" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                    <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
             </div>
 
             {msg && <div className="msg">{msg}</div>}
 
             <button type="submit" className="btn" disabled={loading}>
-              {loading ? 'Procesando…' : 'Ingresar'}
+              {loading ? 'Procesando...' : 'Iniciar Sesión'}
             </button>
-          </form>
 
-          <p className="cta">
-            ¿No tienes una cuenta? <a href="#">Registrarte</a>
-          </p>
+            <Link href="#" className="forgot">
+              ¿Olvidaste tu contraseña?
+            </Link>
+            <p className="cta">
+              ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
+            </p>
+          </form>
         </div>
       </main>
 
       <style jsx>{`
-        .wrap {
-         position: relative;
-         min-height: 100vh;
-         display: grid;
-         place-items: center;
-         background-image: url('/auth-bg.jpg');
-        background-size: cover;
-         background-position: center;
-         background-repeat: no-repeat;
-          padding: 24px;
+        * {
+          font-family: 'Times New Roman', Times, serif;
         }
 
-        .wrap::before {
-         content: "";
-         position: absolute;
-         inset: 0;
-          background: rgba(0, 0, 0, 0.45); /* <- capa negra semitransparente */
-         z-index: 0;
+        .wrap {
+          min-height: 100vh;
+          display: grid;
+          place-items: center;
+          background-image: url('/auth-bg.jpg');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.45);
+          z-index: 0;
         }
 
         .glass {
           position: relative;
-         z-index: 1; /* para estar encima del overlay */
-        /* resto igual que arriba */
+          z-index: 1;
+          width: 100%;
+          max-width: 420px;
+          padding: 32px 28px;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(14px) saturate(150%);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+          color: #222;
+          text-align: center;
+          animation: fadeUp 0.7s ease-out both;
         }
-        .glass {
-        width: 100%;
-         max-width: 520px;
-        padding: 28px 26px 22px;
-         border-radius: 14px;
-         background: rgba(30, 30, 30, 0.45); /* <- antes 0.18 */
-         backdrop-filter: blur(14px) saturate(150%);
-         -webkit-backdrop-filter: blur(14px) saturate(150%);
-         border: 1px solid rgba(255, 255, 255, 0.25);
-         box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
-         color: #fff;
-        text-align: center;
+
+        .logo img {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: #000;
+          padding: 8px;
+          margin-bottom: 8px;
+          animation: floaty 6s ease-in-out infinite;
         }
+
         h1 {
-          margin: 8px 0 18px;
-          font-size: 36px;
-          font-weight: 800;
-          letter-spacing: 0.4px;
-          color: #fff;
+          font-size: 22px;
+          font-weight: 700;
+          color: #1d1d1d;
+          margin: 4px 0;
         }
-        .form {
-          display: grid;
-          gap: 14px;
+
+        .subtitle {
+          font-size: 14px;
+          color: #555;
+          margin-bottom: 18px;
+        }
+
+        label {
+          display: block;
           text-align: left;
+          font-size: 14px;
+          color: #3a2c1a;
+          margin: 8px 0 6px;
         }
+
         .field input {
           width: 100%;
-          height: 48px;
-          padding: 0 16px;
-          border-radius: 26px;
-          border: 1px solid rgba(255, 255, 255, 0.5);
+          height: 42px;
+          padding: 0 14px;
+          border-radius: 8px;
+          border: 1px solid #d1c4a3;
           outline: none;
           font-size: 15px;
-          color: #fff;
-          background: rgba(255, 255, 255, 0.15);
+          color: #2b1d07;
+          background: rgba(255, 255, 255, 0.85);
+          transition: box-shadow 0.15s ease;
         }
-        .field input::placeholder { color: rgba(255,255,255,0.85); }
-        .row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 14px;
-          margin-top: 2px;
+
+        .field input:focus {
+          box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3);
         }
-        .remember {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          color: #fff;
+
+        .pwdWrap {
+          position: relative;
+        }
+
+        .eyeBtn {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
           cursor: pointer;
+          color: #6a512a;
         }
-        .remember input {
-          width: 16px; height: 16px;
-          accent-color: #fff;
-        }
-        .forgot {
+
+        .btn {
+          width: 100%;
+          height: 44px;
+          margin-top: 18px;
+          background: #a38147;
           color: #fff;
-          font-weight: 700;
+          font-weight: bold;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background 0.2s ease;
+        }
+
+        .btn:hover {
+          background: #8d6e3e;
+        }
+
+        .forgot {
+          display: block;
+          margin-top: 14px;
+          color: #7a5b31;
+          font-size: 14px;
           text-decoration: none;
         }
-        .forgot:hover { text-decoration: underline; }
-        .btn {
-          margin: 6px 0 8px;
-          width: 100%;
-          height: 48px;
-          border-radius: 26px;
-          border: none;
-          background: rgba(255,255,255,0.92);
-          color: #333;
-          font-weight: 800;
-          font-size: 16px;
-          cursor: pointer;
+
+        .forgot:hover {
+          text-decoration: underline;
         }
-        .btn:disabled { opacity: 0.7; cursor: default; }
+
         .cta {
-          margin: 6px 0 0;
-          color: rgba(255,255,255,0.95);
+          margin-top: 10px;
+          color: #6b4d26;
           font-size: 15px;
         }
+
         .cta a {
-          color: #fff;
-          font-weight: 800;
+          font-weight: bold;
+          color: #8d6e3e;
           text-decoration: none;
         }
-        .cta a:hover { text-decoration: underline; }
+
+        .cta a:hover {
+          text-decoration: underline;
+        }
+
         .msg {
-          text-align: center;
-          color: #fff;
+          margin-top: 6px;
+          color: #604a23;
           font-size: 14px;
         }
+
+        /* ======= ANIMACIONES ======= */
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes floaty {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+
         @media (max-width: 480px) {
-          .glass { padding: 22px 18px 18px; }
-          h1 { font-size: 30px; }
+          .glass {
+            padding: 24px 20px;
+          }
         }
       `}</style>
     </>
