@@ -36,15 +36,15 @@ export default function AuthPage() {
           <div className="logo">
             <img src="/logo.png" alt="Logo Realty GI" />
           </div>
-          <h1>Realty Grupo Inmobiliario</h1>
-          <p className="subtitle">Plataforma de separación de propiedades</p>
+
+          <h1>REALTY GRUPO INMOBILIARIO</h1>
 
           <form onSubmit={onSubmit} className="form">
-            <label>Correo electrónico</label>
+            <label>Correo Corporativo</label>
             <div className="field">
               <input
                 type="email"
-                placeholder="tu@realtygi.pe"
+                placeholder="nombre.apellido@realtygi.pe"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -55,7 +55,7 @@ export default function AuthPage() {
             <div className="field pwdWrap">
               <input
                 type={showPwd ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Contraseña"
                 value={pwd}
                 onChange={(e) => setPwd(e.target.value)}
                 required
@@ -67,33 +67,13 @@ export default function AuthPage() {
                 aria-label={showPwd ? 'Ocultar contraseña' : 'Ver contraseña'}
               >
                 {showPwd ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-0.53 1.23-1.3 2.42-2.27 3.45" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
                     <line x1="1" y1="1" x2="23" y2="23" />
                     <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
                   </svg>
                 ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
                   </svg>
@@ -107,9 +87,8 @@ export default function AuthPage() {
               {loading ? 'Procesando...' : 'Iniciar Sesión'}
             </button>
 
-            <Link href="#" className="forgot">
-              ¿Olvidaste tu contraseña?
-            </Link>
+            <Link href="#" className="forgot">¿Olvidaste tu contraseña?</Link>
+
             <p className="cta">
               ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
             </p>
@@ -118,9 +97,7 @@ export default function AuthPage() {
       </main>
 
       <style jsx>{`
-        * {
-          font-family: 'Times New Roman', Times, serif;
-        }
+        * { font-family: 'Times New Roman', Times, serif; }
 
         .wrap {
           min-height: 100vh;
@@ -133,11 +110,10 @@ export default function AuthPage() {
           position: relative;
           overflow: hidden;
         }
-
         .overlay {
           position: absolute;
           inset: 0;
-          background: rgba(0, 0, 0, 0.45);
+          background: rgba(225, 225, 225, 0.12);
           z-index: 0;
         }
 
@@ -154,148 +130,80 @@ export default function AuthPage() {
           box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
           color: #222;
           text-align: center;
-          animation: fadeUp 0.7s ease-out both;
+          animation: fadeUp .7s ease-out both;
         }
 
         .logo img {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          background: #000;
-          padding: 8px;
-          margin-bottom: 8px;
+          width: 80px; height: 80px; border-radius: 50%;
+          background: #000; padding: 8px; margin-bottom: 10px;
           animation: floaty 6s ease-in-out infinite;
         }
 
         h1 {
-          font-size: 22px;
+          margin: 4px 0 2px 0;
+          font-size: 24px; /* +2 px */
           font-weight: 700;
           color: #1d1d1d;
-          margin: 4px 0;
-        }
-
-        .subtitle {
-          font-size: 14px;
-          color: #555;
-          margin-bottom: 18px;
+          text-transform: uppercase;
         }
 
         label {
-          display: block;
-          text-align: left;
-          font-size: 14px;
-          color: #3a2c1a;
-          margin: 8px 0 6px;
+          display: block; text-align: left; font-size: 14px;
+          color: #3a2c1a; margin: 12px 0 6px;
         }
 
         .field input {
-          width: 100%;
-          height: 42px;
-          padding: 0 14px;
-          border-radius: 8px;
-          border: 1px solid #d1c4a3;
-          outline: none;
-          font-size: 15px;
-          color: #2b1d07;
-          background: rgba(255, 255, 255, 0.85);
-          transition: box-shadow 0.15s ease;
+          width: 100%; height: 42px; padding: 0 14px;
+          border-radius: 8px; border: 1px solid #d1c4a3;
+          outline: none; font-size: 15px; color: #2b1d07;
+          background: rgba(255, 255, 255, 0.95);
+          transition: box-shadow .15s ease;
         }
+        .field input::placeholder { color: #9d8a67; }
+        .field input:focus { box-shadow: 0 0 0 3px rgba(192,155,88,.30); }
+        /* Oculta placeholder al enfocar */
+        .field input:focus::placeholder { color: transparent; }
 
-        .field input:focus {
-          box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3);
-        }
-
-        .pwdWrap {
-          position: relative;
-        }
-
+        .pwdWrap { position: relative; }
         .eyeBtn {
-          position: absolute;
-          right: 8px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #6a512a;
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer; color: #6a512a;
         }
 
         .btn {
-          width: 100%;
-          height: 44px;
-          margin-top: 18px;
-          background: #a38147;
-          color: #fff;
-          font-weight: bold;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: background 0.2s ease;
+          width: 100%; height: 44px; margin-top: 18px;
+          background: #a38147; color: #fff; font-weight: bold;
+          border: none; border-radius: 6px; cursor: pointer;
+          transition: background .2s ease;
         }
-
-        .btn:hover {
-          background: #8d6e3e;
-        }
+        .btn:hover { background: #8d6e3e; }
 
         .forgot {
           display: block;
-          margin-top: 14px;
-          color: #7a5b31;
+          margin-top: 22px; /* un poco más abajo */
+          color: #000;
+          font-weight: 700; /* negrita */
           font-size: 14px;
           text-decoration: none;
         }
 
-        .forgot:hover {
-          text-decoration: underline;
-        }
+        .cta { margin-top: 10px; color: #e6e0d4; font-size: 15px; }
+        .cta a { font-weight: bold; color: #ffffff; text-decoration: none; }
+        .cta a:hover { text-decoration: underline; }
 
-        .cta {
-          margin-top: 10px;
-          color: #6b4d26;
-          font-size: 15px;
-        }
+        .msg { margin-top: 6px; color: #604a23; font-size: 14px; }
 
-        .cta a {
-          font-weight: bold;
-          color: #8d6e3e;
-          text-decoration: none;
-        }
-
-        .cta a:hover {
-          text-decoration: underline;
-        }
-
-        .msg {
-          margin-top: 6px;
-          color: #604a23;
-          font-size: 14px;
-        }
-
-        /* ======= ANIMACIONES ======= */
         @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes floaty {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-5px);
-          }
+          0%,100% { transform: translateY(0); }
+          50%     { transform: translateY(-5px); }
         }
 
         @media (max-width: 480px) {
-          .glass {
-            padding: 24px 20px;
-          }
+          .glass { padding: 24px 20px; }
         }
       `}</style>
     </>
