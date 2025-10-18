@@ -9,6 +9,7 @@ export default function AuthPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [remember, setRemember] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,7 +37,7 @@ export default function AuthPage() {
         <div className="overlay" />
         <div className="glass">
           <div className="logo" aria-hidden>
-            <Image src="/logo.png" alt="Logo Realty GI" width={80} height={80} priority />
+            <Image src="/logo.png" alt="Logo Realty GI" width={64} height={64} priority style={{ objectFit: 'contain' }} />
           </div>
 
           <h1>REALTY GRUPO INMOBILIARIO</h1>
@@ -68,6 +69,17 @@ export default function AuthPage() {
                 autoComplete="current-password"
                 required
               />
+              <div className="row">
+                 <label className="remember">
+                 <input
+                 type="checkbox"
+                 checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+              />
+                <span>Recuérdame</span>
+                 </label>
+                </div>
+
               <button
                 type="button"
                 className="eyeBtn"
@@ -276,6 +288,27 @@ export default function AuthPage() {
         @media (max-width: 480px) {
           .glass { padding: 24px 20px; }
         }
+          .row {
+            display: flex;
+             align-items: center;
+             justify-content: flex-start;
+             margin-top: 8px;
+            }
+
+            .remember {
+            display: inline-flex;
+             align-items: center;
+             gap: 8px;
+             font-size: 14px;
+             color: #3a2c1a;
+             cursor: pointer;
+            }
+
+            .remember input {
+             width: 16px;
+             height: 16px;
+             accent-color: #a38147; /* tono dorado */
+            }
       `}</style>
     </>
   );
