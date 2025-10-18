@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -12,19 +13,53 @@ export default function AuthPage() {
   const [remember, setRemember] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setMsg(null);
-    setLoading(true);
-    try {
-      // TODO: aquí conectarás con Supabase (signInWithPassword)
-      await new Promise((r) => setTimeout(r, 800));
-      setMsg('Ingreso exitoso.');
-    } catch (_e: unknown) {
-      setMsg('Ocurrió un error.');
-    } finally {
-      setLoading(false);
+  e.preventDefault();
+  setMsg(null);
+  setLoading(true);
+
+  try {
+    // 1) Intento de login en Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: pwd,
+    });
+
+    if (error || !data.user) {
+      // Correo/clave no válidos en Auth
+      throw new Error('Usuario no reconocido, por favor regístrese.');
     }
+
+    // 2) Buscar su perfil en tu tabla `usuarios`
+    const { data: perfil, error: qerr } = await supabase
+      .from('usuarios')
+      .select('estado')
+      .eq('auth_user_id', data.user.id)
+      .single();
+
+    if (qerr || !perfil) {
+      // No existe perfil asociado → no está registrado en tu tabla de negocio
+      await supabase.auth.signOut();
+      throw new Error('Usuario no reconocido, por favor regístrese.');
+    }
+
+    if (perfil.estado !== 'ACTIVO') {
+      await supabase.auth.signOut();
+      if (perfil.estado === 'PENDIENTE') {
+        throw new Error('Tu cuenta está pendiente de activación.');
+      }
+      throw new Error('Tu cuenta está inactiva. Contacta al administrador.');
+    }
+
+    // 3) OK → continuar
+    setMsg('Ingreso exitoso.');
+    // Redirige a tu página protegida:
+    // window.location.href = '/orden-de-requerimiento';
+  } catch (err: unknown) {
+    setMsg(err instanceof Error ? err.message : 'Ocurrió un error.');
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <>
