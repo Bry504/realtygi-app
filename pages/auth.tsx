@@ -222,12 +222,14 @@ export default function AuthPage() {
         .field input:focus::placeholder { color: transparent; } /* oculta placeholder al enfocar */
 
         .pwdWrap { position: relative; }
+        .pwdWrap input { padding-right: 44px; }           /* ← espacio para el icono */
         .eyeBtn {
           position: absolute;
-          right: 8px;
+          right: 10px;
           top: 50%;
-          transform: translateY(-50%);
-          background: none;
+            width: 32px; height: 32px;                      /* ← tamaño fijo */
+            display: grid; place-items: center;             /* ← centra el svg */
+          background: transparent;
           border: none;
           cursor: pointer;
           color: #6a512a;
@@ -236,7 +238,7 @@ export default function AuthPage() {
         .btn {
           width: 100%;
           height: 46px;
-          margin-top: 18px;
+          margin-top: 10px;
           margin-bottom: 18px; /* separa del enlace */
           background: #a38147;
           color: #fff;
@@ -288,11 +290,13 @@ export default function AuthPage() {
         @media (max-width: 480px) {
           .glass { padding: 24px 20px; }
         }
+
+          .pwdWrap { position: relative; margin-bottom: 6px; }  /* antes 0 */
           .row {
             display: flex;
              align-items: center;
              justify-content: flex-start;
-             margin-top: 8px;
+             margin: 4px 0 6px;
             }
 
             .remember {
