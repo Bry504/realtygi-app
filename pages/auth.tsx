@@ -69,17 +69,6 @@ export default function AuthPage() {
                 autoComplete="current-password"
                 required
               />
-              <div className="row">
-                 <label className="remember">
-                 <input
-                 type="checkbox"
-                 checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-              />
-                <span>Recuérdame</span>
-                 </label>
-                </div>
-
               <button
                 type="button"
                 className="eyeBtn"
@@ -121,6 +110,18 @@ export default function AuthPage() {
                 )}
               </button>
             </div>
+        
+            <div className="row">
+                 <label className="remember">
+                 <input
+                 type="checkbox"
+                 checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+              />
+                <span>Recuérdame</span>
+                 </label>
+            </div>
+
 
             {msg && <div className="msg">{msg}</div>}
 
@@ -221,18 +222,22 @@ export default function AuthPage() {
         .field input:focus { box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3); }
         .field input:focus::placeholder { color: transparent; } /* oculta placeholder al enfocar */
 
-        .pwdWrap { position: relative; }
-        .pwdWrap input { padding-right: 44px; }           /* ← espacio para el icono */
+        .pwdWrap { position: relative; margin-bottom: 6px; }
+        .pwdWrap input { padding-right: 44px; }  /* espacio para el icono */
+
         .eyeBtn {
-          position: absolute;
-          right: 10px;
-          top: 50%;
-            width: 32px; height: 32px;                      /* ← tamaño fijo */
-            display: grid; place-items: center;             /* ← centra el svg */
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          color: #6a512a;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);  /* centra respecto al input */
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6a512a;
         }
 
         .btn {
@@ -291,7 +296,6 @@ export default function AuthPage() {
           .glass { padding: 24px 20px; }
         }
 
-          .pwdWrap { position: relative; margin-bottom: 6px; }  /* antes 0 */
           .row {
             display: flex;
              align-items: center;
