@@ -621,6 +621,23 @@ export default function AuthPage() {
           margin-top: 8px;
           margin-bottom: 8px;
         }
+          /* Ajuste visual: igualar separación vertical entre todas las filas */
+          .formRegister .g2 {
+            gap: 10px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+          }
+
+          /* Compensa el "gap" de las filas con inputs simples */
+          .formRegister .field:not(.pwdWrap) {
+            margin-top: 4px;
+            margin-bottom: 4px;
+          }
+
+          /* Alinea mejor el input con select (DNI) */
+          .formRegister select {
+            padding-right: 8px; /* reduce la flecha del select */
+          }
 
         .error { color: #c81e1e; font-size: 13px; margin: 4px 0 0; text-align: left; }
 
