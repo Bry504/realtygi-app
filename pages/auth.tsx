@@ -336,7 +336,9 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                {dupP && <p className="error">Correo principal ya registrado</p>}
+                <div className="errLine">
+                  {dupP && <span className="error">Correo principal ya registrado</span>}
+                </div>
 
                 {/* Correo de recuperación */}
                 <div className="field">
@@ -348,7 +350,9 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                {dupR && <p className="error">Correo de recuperación ya registrado</p>}
+                <div className="errLine">
+                  {dupR && <span className="error">Correo de recuperación ya registrado</span>}
+                </div>
 
                 {/* Celular + Contraseña */}
                 <div className="g2">
@@ -617,35 +621,30 @@ export default function AuthPage() {
         .g2 {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          margin-top: 8px;
-          margin-bottom: 8px;
+          gap: 10px;              /* espacio ENTRE columnas */
         }
-          /* Ajuste visual: igualar separación vertical entre todas las filas */
-          .formRegister .g2 {
-            gap: 10px;
-            margin-top: 4px;
-            margin-bottom: 4px;
-          }
 
-          /* Compensa el "gap" de las filas con inputs simples */
-          .formRegister .field:not(.pwdWrap) {
-            margin-top: 4px;
-            margin-bottom: 4px;
-          }
-
-          /* Alinea mejor el input con select (DNI) */
-          .formRegister select {
-            padding-right: 8px; /* reduce la flecha del select */
-          }
-
-        .error { color: #c81e1e; font-size: 13px; margin: 4px 0 0; text-align: left; }
+        /* Espaciado vertical uniforme y compacto ENTRE filas */
+        .formRegister .field,
+        .formRegister .g2 {
+          margin-top: 4px;        /* poco espaciado arriba */
+          margin-bottom: 4px;     /* poco espaciado abajo */
+        }
 
         /* Separador sutil arriba del registro */
-        .mt8 { height: 8px; }
+        .mt8 { height: 6px; }
 
-        /* El formulario del registro ocupa toda la altura para poder empujar el botón abajo */
+        /* Form de registro ocupa toda la altura (si quieres empujar el botón) */
         .formRegister { display: flex; flex-direction: column; height: 100%; }
+
+        /* Línea reservada para errores (evita saltos del layout) */
+        .errLine { min-height: 14px; line-height: 14px; }
+
+        /* Estilo de error (más compacto) */
+        .error { color: #c81e1e; font-size: 12px; display: inline-block; }
+
+        /* Ajuste fino visual del select */
+        .formRegister select { padding-right: 8px; }
 
         /* Empuja el botón al final del panel si quieres dejar más aire */
         .spacer { flex: 1; }
