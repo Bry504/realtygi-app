@@ -632,6 +632,12 @@ export default function AuthPage() {
 
         /* Empuja el botón al final del panel si quieres dejar más aire */
         .spacer { flex: 1; }
+        /* Espaciado vertical uniforme entre cada fila del formulario de registro */
+        .formRegister .field,
+        .formRegister .g2 {
+          margin-top: 12px;
+          margin-bottom: 12px;
+        }
       `}</style>
     </>
   );
