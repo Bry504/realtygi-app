@@ -38,21 +38,22 @@ export default function AuthPage() {
     };
   };
 
-  // Verificación en vivo de correos duplicados
+    // Verificación en vivo de correos duplicados (usa la VIEW y lower-case)
   const checkCorreo = useMemo(
     () =>
       debounce(async (correo: string, tipo: 'P' | 'R') => {
         if (!correo) return;
+        const emailLC = correo.trim().toLowerCase();
+
         const { data, error } = await supabase
-          .from('usuarios')
-          .select('id')
-          .or(`usuario.eq.${correo},correo_recuperacion.eq.${correo}`);
-        if (!error && data && data.length > 0) {
-          tipo === 'P' ? setDupP(true) : setDupR(true);
-        } else {
-          tipo === 'P' ? setDupP(false) : setDupR(false);
-        }
-      }, 450),
+          .from('usuarios_email_check')
+          .select('usuario, correo_recuperacion')
+          .or(`usuario.eq.${emailLC},correo_recuperacion.eq.${emailLC}`);
+
+        const exists = !error && Array.isArray(data) && data.length > 0;
+        if (tipo === 'P') setDupP(exists);
+        else setDupR(exists);
+      }, 350),
     []
   );
 
@@ -121,10 +122,45 @@ export default function AuthPage() {
 
     setMsg(null);
     setLoading(true);
+
+    // 0) Verificación directa (por si se saltó el debounce)
+    //    Chequea principal y recuperación contra la VIEW
+    const emailP = correoP.trim().toLowerCase();
+    const emailR = correoR.trim().toLowerCase();
+
+    // Principal
+    {
+      const { data, error } = await supabase
+        .from('usuarios_email_check')
+        .select('usuario')
+        .eq('usuario', emailP);
+
+      if (!error && data && data.length > 0) {
+        setDupP(true);
+        setMsg('Correo principal ya registrado. Intenta con otro.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Recuperación
+    {
+      const { data, error } = await supabase
+        .from('usuarios_email_check')
+        .select('correo_recuperacion')
+        .eq('correo_recuperacion', emailR);
+
+      if (!error && data && data.length > 0) {
+        setDupR(true);
+        setMsg('Correo de recuperación ya registrado. Intenta con otro.');
+        setLoading(false);
+        return;
+      }
+    }
     try {
       // 1) Alta en Auth con correo principal
       const { data: auth, error: authErr } = await supabase.auth.signUp({
-        email: correoP,
+        email: emailP,
         password: pwdReg,
       });
       if (authErr) throw authErr;
@@ -134,14 +170,15 @@ export default function AuthPage() {
       const { error: insErr } = await supabase.from('usuarios').insert([
         {
           auth_user_id: authId,
-          usuario: correoP,                 // 👈 correo principal va aquí
+          usuario: emailP,                 // 👈 correo principal va aquí
           nombres,
           apellidos,
           tipo_doc: tipoDoc,
           num_doc: numDoc,
           celular,
-          correo_recuperacion: correoR,     // 👈 correo de recuperación
+          correo_recuperacion: emailR,     // 👈 correo de recuperación
           estado: 'PENDIENTE',
+          rol: 'asesor',
         },
       ]);
       if (insErr) throw insErr;
@@ -397,7 +434,7 @@ export default function AuthPage() {
 
                 {msg && <div className="msg">{msg}</div>}
 
-                <button className="btn" disabled={!!(dupP || dupR)}>
+                <button className="btn" disabled={loading || dupP || dupR}>
                   Registrarme
                 </button>
 
@@ -621,17 +658,24 @@ export default function AuthPage() {
         .g2 {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 6px;     /* entre columnas */
+          gap: 4px;     /* entre columnas */
+        }
+          .formRegister {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;              /* separa todas las filas por igual */
         }
 
         /* entre filas del registro, verdaderamente corto */
         .formRegister .field,
         .formRegister .g2 {
-          margin-top: 3px;
-          margin-bottom: 3px;
         }
 
-        /* alto fijo para mensajes y que NO muevan el layout */
+        .field,
+        .pwdWrap {
+          margin: 0;             /* quita márgenes que rompían el ritmo */
+        }
+
         .errLine { min-height: 14px; line-height: 14px; }
         .error { color: #c81e1e; font-size: 12px; display: inline-block; }
       `}</style>
