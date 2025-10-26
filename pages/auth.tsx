@@ -635,8 +635,8 @@ export default function AuthPage() {
         /* Espaciado vertical uniforme entre cada fila del formulario de registro */
         .formRegister .field,
         .formRegister .g2 {
-          margin-top: 12px;
-          margin-bottom: 12px;
+          margin-top: 4px;
+          margin-bottom: 4px;
         }
       `}</style>
     </>
