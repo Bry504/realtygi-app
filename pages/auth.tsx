@@ -162,8 +162,28 @@ export default function AuthPage() {
       const { data: auth, error: authErr } = await supabase.auth.signUp({
         email: emailP,
         password: pwdReg,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`, // o tu dominio en prod
+          data: {
+            // estos campos vivirán en auth.users.raw_user_meta_data
+            nombres,
+            apellidos,
+            tipo_doc: tipoDoc,
+            num_doc: numDoc,
+            celular,
+            correo_recuperacion: emailR,
+            rol: 'asesor',
+            estado: 'PENDIENTE'
+          }
+        }
       });
       if (authErr) throw authErr;
+      // ⚠️ IMPORTANTE: NO intentes insertar en `usuarios` desde el cliente
+      // cuando hay confirmación por email, porque user.id puede ser null.
+      // Solo muestra el mensaje:
+      setMsg('Te enviamos un correo de confirmación. Por favor confírmalo para activar tu cuenta.');
+      setLoading(false);
+      return;
       const authId = auth.user?.id;
 
       // 2) Insert en tabla de negocio
