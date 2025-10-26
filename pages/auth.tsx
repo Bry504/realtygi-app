@@ -621,45 +621,19 @@ export default function AuthPage() {
         .g2 {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 6px;              /* compacto entre columnas */
+          gap: 6px;     /* entre columnas */
         }
 
-        /* Espaciado vertical uniforme y compacto ENTRE filas del registro */
+        /* entre filas del registro, verdaderamente corto */
         .formRegister .field,
         .formRegister .g2 {
           margin-top: 3px;
           margin-bottom: 3px;
         }
 
-        /* Separador sutil arriba del registro */
-        .mt8 { height: 6px; }
-
-        /* El formulario del registro ocupa toda la altura (para empujar el botón si hace falta) */
-        .formRegister {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        }
-
-        /* Línea reservada para mensajes de error (evita que el layout salte) */
-        .errLine {
-          min-height: 14px;
-          line-height: 14px;
-        }
-
-        /* Estilo de error compacto */
-        .error {
-          color: #c81e1e;
-          font-size: 12px;
-          display: inline-block;
-          margin-top: 2px;
-        }
-
-        /* Ajuste fino visual del select */
-        .formRegister select { padding-right: 8px; }
-
-        /* (opcional) empujar elementos al fondo si lo necesitas en algún momento */
-        .spacer { flex: 1; }
+        /* alto fijo para mensajes y que NO muevan el layout */
+        .errLine { min-height: 14px; line-height: 14px; }
+        .error { color: #c81e1e; font-size: 12px; display: inline-block; }
       `}</style>
     </>
   );
