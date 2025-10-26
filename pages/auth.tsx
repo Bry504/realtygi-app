@@ -283,31 +283,30 @@ export default function AuthPage() {
               <h1>REGISTRO DE USUARIO</h1>
 
               <form onSubmit={onSubmitRegister} className="form formRegister" noValidate>
-                {/* Espaciado suave arriba */}
                 <div className="mt8" />
 
-                {/* Nombres (fila propia) */}
-                <div className="field">
-                  <input
-                    placeholder="Nombres"
-                    value={nombres}
-                    onChange={(e) => setNombres(e.target.value)}
-                    required
-                  />
+                {/* Nombres + Apellidos */}
+                <div className="g2">
+                  <div className="field">
+                    <input
+                      placeholder="Nombres"
+                      value={nombres}
+                      onChange={(e) => setNombres(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="field">
+                    <input
+                      placeholder="Apellidos"
+                      value={apellidos}
+                      onChange={(e) => setApellidos(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
 
-                {/* Apellidos (fila propia) */}
-                <div className="field">
-                  <input
-                    placeholder="Apellidos"
-                    value={apellidos}
-                    onChange={(e) => setApellidos(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Tipo Doc + Nº Doc (única fila de dos columnas) */}
-                <div className="docRow">
+                {/* Tipo Doc + Nº Doc */}
+                <div className="g2">
                   <div className="field">
                     <select
                       value={tipoDoc}
@@ -327,17 +326,7 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                {/* Celular (fila propia) */}
-                <div className="field">
-                  <input
-                    placeholder="Celular"
-                    value={celular}
-                    onChange={(e) => setCelular(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Correo principal (fila propia) */}
+                {/* Correo principal */}
                 <div className="field">
                   <input
                     placeholder="Correo principal"
@@ -349,7 +338,7 @@ export default function AuthPage() {
                 </div>
                 {dupP && <p className="error">Correo principal ya registrado</p>}
 
-                {/* Correo de recuperación (fila propia) */}
+                {/* Correo de recuperación */}
                 <div className="field">
                   <input
                     placeholder="Correo de recuperación"
@@ -361,44 +350,49 @@ export default function AuthPage() {
                 </div>
                 {dupR && <p className="error">Correo de recuperación ya registrado</p>}
 
-                {/* Contraseña con ojito (fila propia) */}
-                <div className="field pwdWrap">
-                  <input
-                    placeholder="Contraseña"
-                    type={showPwdReg ? 'text' : 'password'}
-                    value={pwdReg}
-                    onChange={(e) => setPwdReg(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="eyeBtn"
-                    onClick={() => setShowPwdReg((s) => !s)}
-                    aria-label={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    title={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
-                  >
-                    {showPwdReg ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                        <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
+                {/* Celular + Contraseña */}
+                <div className="g2">
+                  <div className="field">
+                    <input
+                      placeholder="Celular"
+                      value={celular}
+                      onChange={(e) => setCelular(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="field pwdWrap">
+                    <input
+                      placeholder="Contraseña"
+                      type={showPwdReg ? 'text' : 'password'}
+                      value={pwdReg}
+                      onChange={(e) => setPwdReg(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="eyeBtn"
+                      onClick={() => setShowPwdReg((s) => !s)}
+                      aria-label={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      title={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    >
+                      {showPwdReg ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                          <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Mensajes */}
                 {msg && <div className="msg">{msg}</div>}
 
-                {/* Empuja el botón al fondo del panel */}
-                <div className="spacer" />
-
-                {/* Botón */}
                 <button className="btn" disabled={!!(dupP || dupR)}>
                   Registrarme
                 </button>
@@ -450,7 +444,7 @@ export default function AuthPage() {
           z-index: 1;
           width: 100%;
           max-width: 420px;
-          height: 560px; /* 🔽 reducida para no verse tan alta */
+          height: 560px; /* más compacto */
           padding: 0;     /* el padding va en cada cara */
           border-radius: 16px;
           background: rgba(255, 255, 255, 0.18);
@@ -492,7 +486,9 @@ export default function AuthPage() {
           margin: 12px 0 6px;
         }
 
-        .field input {
+        /* Unifica el look de inputs y selects */
+        .field input,
+        .field select {
           width: 100%;
           height: 42px;
           padding: 0 14px;
@@ -505,7 +501,8 @@ export default function AuthPage() {
           transition: box-shadow 0.15s ease;
         }
         .field input::placeholder { color: #9d8a67; }
-        .field input:focus { box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3); }
+        .field input:focus,
+        .field select:focus { box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3); }
         .field input:focus::placeholder { color: transparent; }
 
         .pwdWrap { position: relative; margin-bottom: 6px; }
@@ -594,7 +591,7 @@ export default function AuthPage() {
           accent-color: #a38147;
         }
 
-        /* ======= SOLO LO NUEVO PARA EL FLIP Y REGISTRO ======= */
+        /* ======= NUEVO PARA FLIP Y REGISTRO ======= */
         .flip3d {
           position: relative;
           width: 100%;
@@ -616,60 +613,25 @@ export default function AuthPage() {
         }
         .back { transform: rotateY(180deg); }
 
-        /* Cuadrícula 2 columnas para el registro */
-        .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+        /* Fila de 2 columnas (usada en registro) */
+        .g2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 8px;
+          margin-bottom: 8px;
+        }
+
         .error { color: #c81e1e; font-size: 13px; margin: 4px 0 0; text-align: left; }
 
-        /* separador para bajar un poco los campos de registro */
+        /* Separador sutil arriba del registro */
         .mt8 { height: 8px; }
-
-        /* mismo look para <select> que para los inputs dentro de .field */
-        .field select {
-          width: 100%;
-          height: 42px;
-          padding: 0 14px;
-          border-radius: 8px;
-          border: 1px solid #d1c4a3;
-          background: rgba(255,255,255,0.95);
-          font-size: 15px;
-          color: #2b1d07;
-          outline: none;
-          transition: box-shadow .15s ease;
-        }
-        .field select:focus { box-shadow: 0 0 0 3px rgba(192,155,88,.30); }
 
         /* El formulario del registro ocupa toda la altura para poder empujar el botón abajo */
         .formRegister { display: flex; flex-direction: column; height: 100%; }
 
-        /* Separador pequeño arriba */
-        .mt8 { height: 6px; }
-
-        /* ÚNICA fila de 2 columnas para Tipo Doc + Nº Doc */
-        .docRow {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          margin-top: 4px;
-        }
-
-        /* Empuja el botón al final del panel */
+        /* Empuja el botón al final del panel si quieres dejar más aire */
         .spacer { flex: 1; }
-
-        /* Los <select> del registro con el mismo look de los inputs */
-        .field select {
-          width: 100%;
-          height: 42px;
-          padding: 0 14px;
-          border-radius: 8px;
-          border: 1px solid #d1c4a3;
-          background: rgba(255, 255, 255, 0.95);
-          font-size: 15px;
-          color: #2b1d07;
-          outline: none;
-          transition: box-shadow .15s ease;
-        }
-        .field select:focus { box-shadow: 0 0 0 3px rgba(192,155,88,.30); }
-
       `}</style>
     </>
   );
