@@ -280,26 +280,59 @@ export default function AuthPage() {
                 />
               </div>
 
-              <h1>REGISTRO DE USUARIO</h1>
-
               <form onSubmit={onSubmitRegister} className="form" noValidate>
-                <div className="g2">
-                  <input placeholder="Nombres" value={nombres} onChange={(e) => setNombres(e.target.value)} required />
-                  <input placeholder="Apellidos" value={apellidos} onChange={(e) => setApellidos(e.target.value)} required />
-                </div>
+              {/* Baja un poco el bloque del registro */}
+              <div className="mt8" />
 
-                <div className="g2">
-                  <div className="field">
-                    <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value as 'DNI' | 'CE')}>
-                      <option value="DNI">DNI</option>
-                      <option value="CE">CE</option>
-                    </select>
-                  </div>
-                  <input placeholder={tipoDoc} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} required />
+              <div className="g2">
+                <div className="field">
+                  <input
+                    placeholder="Nombres"
+                    value={nombres}
+                    onChange={(e) => setNombres(e.target.value)}
+                    required
+                  />
                 </div>
+                <div className="field">
+                  <input
+                    placeholder="Apellidos"
+                    value={apellidos}
+                    onChange={(e) => setApellidos(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
-                <div className="g2">
-                  <input placeholder="Celular" value={celular} onChange={(e) => setCelular(e.target.value)} required />
+              <div className="g2">
+                <div className="field">
+                  <select
+                    value={tipoDoc}
+                    onChange={(e) => setTipoDoc(e.target.value as 'DNI' | 'CE')}
+                  >
+                    <option value="DNI">DNI</option>
+                    <option value="CE">CE</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <input
+                    placeholder={tipoDoc}
+                    value={numDoc}
+                    onChange={(e) => setNumDoc(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="g2">
+                <div className="field">
+                  <input
+                    placeholder="Celular"
+                    value={celular}
+                    onChange={(e) => setCelular(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="field">
                   <input
                     placeholder="Correo principal"
                     type="email"
@@ -308,9 +341,11 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                {dupP && <p className="error">Correo principal ya registrado</p>}
+              </div>
+              {dupP && <p className="error">Correo principal ya registrado</p>}
 
-                <div className="g2">
+              <div className="g2">
+                <div className="field">
                   <input
                     placeholder="Correo de recuperación"
                     type="email"
@@ -318,58 +353,60 @@ export default function AuthPage() {
                     onChange={(e) => setCorreoR(e.target.value)}
                     required
                   />
-                  <div className="field pwdWrap">
-                    <input
-                      placeholder="Contraseña"
-                      type={showPwdReg ? 'text' : 'password'}
-                      value={pwdReg}
-                      onChange={(e) => setPwdReg(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="eyeBtn"
-                      onClick={() => setShowPwdReg((s) => !s)}
-                      aria-label={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
-                      title={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    >
-                      {showPwdReg ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
-                          <line x1="1" y1="1" x2="23" y2="23" />
-                          <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
                 </div>
-                {dupR && <p className="error">Correo de recuperación ya registrado</p>}
 
-                {msg && <div className="msg">{msg}</div>}
-
-                <button className="btn" disabled={!!(dupP || dupR)}>
-                  Registrarme
-                </button>
-
-                <p className="cta">
-                  ¿Ya tienes cuenta?{' '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMode('login');
-                      setMsg(null);
-                    }}
+                <div className="field pwdWrap">
+                  <input
+                    placeholder="Contraseña"
+                    type={showPwdReg ? 'text' : 'password'}
+                    value={pwdReg}
+                    onChange={(e) => setPwdReg(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="eyeBtn"
+                    onClick={() => setShowPwdReg((s) => !s)}
+                    aria-label={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    title={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
                   >
-                    Iniciar Sesión
-                  </a>
-                </p>
-              </form>
+                    {showPwdReg ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                        <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {dupR && <p className="error">Correo de recuperación ya registrado</p>}
+
+              {msg && <div className="msg">{msg}</div>}
+
+              <button className="btn" disabled={!!(dupP || dupR)}>
+                Registrarme
+              </button>
+
+              <p className="cta">
+                ¿Ya tienes cuenta?{' '}
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMode('login');
+                    setMsg(null);
+                  }}
+                >
+                  Iniciar Sesión
+                </a>
+              </p>
+            </form>
             </div>
           </div>
         </div>
@@ -403,7 +440,7 @@ export default function AuthPage() {
           z-index: 1;
           width: 100%;
           max-width: 420px;
-          height: 620px; /* fijo para evitar scroll en el flip */
+          height: 560px; /* 🔽 reducida para no verse tan alta */
           padding: 0;     /* el padding va en cada cara */
           border-radius: 16px;
           background: rgba(255, 255, 255, 0.18);
@@ -572,6 +609,24 @@ export default function AuthPage() {
         /* Cuadrícula 2 columnas para el registro */
         .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
         .error { color: #c81e1e; font-size: 13px; margin: 4px 0 0; text-align: left; }
+
+        /* separador para bajar un poco los campos de registro */
+        .mt8 { height: 8px; }
+
+        /* mismo look para <select> que para los inputs dentro de .field */
+        .field select {
+          width: 100%;
+          height: 42px;
+          padding: 0 14px;
+          border-radius: 8px;
+          border: 1px solid #d1c4a3;
+          background: rgba(255,255,255,0.95);
+          font-size: 15px;
+          color: #2b1d07;
+          outline: none;
+          transition: box-shadow .15s ease;
+        }
+        .field select:focus { box-shadow: 0 0 0 3px rgba(192,155,88,.30); }
       `}</style>
     </>
   );
