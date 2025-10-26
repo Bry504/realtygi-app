@@ -46,7 +46,7 @@ export default function AuthPage() {
         const { data, error } = await supabase
           .from('usuarios')
           .select('id')
-          .or(`correo_principal.eq.${correo},correo_recuperacion.eq.${correo}`);
+          .or(`usuario.eq.${correo},correo_recuperacion.eq.${correo}`);
         if (!error && data && data.length > 0) {
           tipo === 'P' ? setDupP(true) : setDupR(true);
         } else {
@@ -134,13 +134,13 @@ export default function AuthPage() {
       const { error: insErr } = await supabase.from('usuarios').insert([
         {
           auth_user_id: authId,
+          usuario: correoP,                 // 👈 correo principal va aquí
           nombres,
           apellidos,
           tipo_doc: tipoDoc,
           num_doc: numDoc,
           celular,
-          correo_principal: correoP,
-          correo_recuperacion: correoR,
+          correo_recuperacion: correoR,     // 👈 correo de recuperación
           estado: 'PENDIENTE',
         },
       ]);
@@ -621,39 +621,45 @@ export default function AuthPage() {
         .g2 {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 10px;              /* espacio ENTRE columnas */
+          gap: 6px;              /* compacto entre columnas */
         }
 
-        /* Espaciado vertical uniforme y compacto ENTRE filas */
+        /* Espaciado vertical uniforme y compacto ENTRE filas del registro */
         .formRegister .field,
         .formRegister .g2 {
-          margin-top: 4px;        /* poco espaciado arriba */
-          margin-bottom: 4px;     /* poco espaciado abajo */
+          margin-top: 3px;
+          margin-bottom: 3px;
         }
 
         /* Separador sutil arriba del registro */
         .mt8 { height: 6px; }
 
-        /* Form de registro ocupa toda la altura (si quieres empujar el botón) */
-        .formRegister { display: flex; flex-direction: column; height: 100%; }
+        /* El formulario del registro ocupa toda la altura (para empujar el botón si hace falta) */
+        .formRegister {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
 
-        /* Línea reservada para errores (evita saltos del layout) */
-        .errLine { min-height: 14px; line-height: 14px; }
+        /* Línea reservada para mensajes de error (evita que el layout salte) */
+        .errLine {
+          min-height: 14px;
+          line-height: 14px;
+        }
 
-        /* Estilo de error (más compacto) */
-        .error { color: #c81e1e; font-size: 12px; display: inline-block; }
+        /* Estilo de error compacto */
+        .error {
+          color: #c81e1e;
+          font-size: 12px;
+          display: inline-block;
+          margin-top: 2px;
+        }
 
         /* Ajuste fino visual del select */
         .formRegister select { padding-right: 8px; }
 
-        /* Empuja el botón al final del panel si quieres dejar más aire */
+        /* (opcional) empujar elementos al fondo si lo necesitas en algún momento */
         .spacer { flex: 1; }
-        /* Espaciado vertical uniforme entre cada fila del formulario de registro */
-        .formRegister .field,
-        .formRegister .g2 {
-          margin-top: 4px;
-          margin-bottom: 4px;
-        }
       `}</style>
     </>
   );
