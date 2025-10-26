@@ -280,11 +280,13 @@ export default function AuthPage() {
                 />
               </div>
 
-              <form onSubmit={onSubmitRegister} className="form" noValidate>
-              {/* Baja un poco el bloque del registro */}
-              <div className="mt8" />
+              <h1>REGISTRO DE USUARIO</h1>
 
-              <div className="g2">
+              <form onSubmit={onSubmitRegister} className="form formRegister" noValidate>
+                {/* Espaciado suave arriba */}
+                <div className="mt8" />
+
+                {/* Nombres (fila propia) */}
                 <div className="field">
                   <input
                     placeholder="Nombres"
@@ -293,6 +295,8 @@ export default function AuthPage() {
                     required
                   />
                 </div>
+
+                {/* Apellidos (fila propia) */}
                 <div className="field">
                   <input
                     placeholder="Apellidos"
@@ -301,29 +305,29 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-              </div>
 
-              <div className="g2">
-                <div className="field">
-                  <select
-                    value={tipoDoc}
-                    onChange={(e) => setTipoDoc(e.target.value as 'DNI' | 'CE')}
-                  >
-                    <option value="DNI">DNI</option>
-                    <option value="CE">CE</option>
-                  </select>
+                {/* Tipo Doc + Nº Doc (única fila de dos columnas) */}
+                <div className="docRow">
+                  <div className="field">
+                    <select
+                      value={tipoDoc}
+                      onChange={(e) => setTipoDoc(e.target.value as 'DNI' | 'CE')}
+                    >
+                      <option value="DNI">DNI</option>
+                      <option value="CE">CE</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <input
+                      placeholder={tipoDoc}
+                      value={numDoc}
+                      onChange={(e) => setNumDoc(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="field">
-                  <input
-                    placeholder={tipoDoc}
-                    value={numDoc}
-                    onChange={(e) => setNumDoc(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="g2">
+                {/* Celular (fila propia) */}
                 <div className="field">
                   <input
                     placeholder="Celular"
@@ -332,6 +336,8 @@ export default function AuthPage() {
                     required
                   />
                 </div>
+
+                {/* Correo principal (fila propia) */}
                 <div className="field">
                   <input
                     placeholder="Correo principal"
@@ -341,10 +347,9 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-              </div>
-              {dupP && <p className="error">Correo principal ya registrado</p>}
+                {dupP && <p className="error">Correo principal ya registrado</p>}
 
-              <div className="g2">
+                {/* Correo de recuperación (fila propia) */}
                 <div className="field">
                   <input
                     placeholder="Correo de recuperación"
@@ -354,7 +359,9 @@ export default function AuthPage() {
                     required
                   />
                 </div>
+                {dupR && <p className="error">Correo de recuperación ya registrado</p>}
 
+                {/* Contraseña con ojito (fila propia) */}
                 <div className="field pwdWrap">
                   <input
                     placeholder="Contraseña"
@@ -384,29 +391,32 @@ export default function AuthPage() {
                     )}
                   </button>
                 </div>
-              </div>
-              {dupR && <p className="error">Correo de recuperación ya registrado</p>}
 
-              {msg && <div className="msg">{msg}</div>}
+                {/* Mensajes */}
+                {msg && <div className="msg">{msg}</div>}
 
-              <button className="btn" disabled={!!(dupP || dupR)}>
-                Registrarme
-              </button>
+                {/* Empuja el botón al fondo del panel */}
+                <div className="spacer" />
 
-              <p className="cta">
-                ¿Ya tienes cuenta?{' '}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setMode('login');
-                    setMsg(null);
-                  }}
-                >
-                  Iniciar Sesión
-                </a>
-              </p>
-            </form>
+                {/* Botón */}
+                <button className="btn" disabled={!!(dupP || dupR)}>
+                  Registrarme
+                </button>
+
+                <p className="cta">
+                  ¿Ya tienes cuenta?{' '}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMode('login');
+                      setMsg(null);
+                    }}
+                  >
+                    Iniciar Sesión
+                  </a>
+                </p>
+              </form>
             </div>
           </div>
         </div>
@@ -627,6 +637,39 @@ export default function AuthPage() {
           transition: box-shadow .15s ease;
         }
         .field select:focus { box-shadow: 0 0 0 3px rgba(192,155,88,.30); }
+
+        /* El formulario del registro ocupa toda la altura para poder empujar el botón abajo */
+        .formRegister { display: flex; flex-direction: column; height: 100%; }
+
+        /* Separador pequeño arriba */
+        .mt8 { height: 6px; }
+
+        /* ÚNICA fila de 2 columnas para Tipo Doc + Nº Doc */
+        .docRow {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 4px;
+        }
+
+        /* Empuja el botón al final del panel */
+        .spacer { flex: 1; }
+
+        /* Los <select> del registro con el mismo look de los inputs */
+        .field select {
+          width: 100%;
+          height: 42px;
+          padding: 0 14px;
+          border-radius: 8px;
+          border: 1px solid #d1c4a3;
+          background: rgba(255, 255, 255, 0.95);
+          font-size: 15px;
+          color: #2b1d07;
+          outline: none;
+          transition: box-shadow .15s ease;
+        }
+        .field select:focus { box-shadow: 0 0 0 3px rgba(192,155,88,.30); }
+
       `}</style>
     </>
   );
