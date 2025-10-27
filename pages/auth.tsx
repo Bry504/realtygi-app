@@ -2,11 +2,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
 import supabase from '../lib/supabaseClient';
 
 type Mode = 'login' | 'register' | 'verify';
 
 export default function AuthPage() {
+  // ===== Router =====
+  const router = useRouter();
+
   // ===== Vistas =====
   const [mode, setMode] = useState<Mode>('login');
 
@@ -27,8 +31,6 @@ export default function AuthPage() {
   const [showPwdReg, setShowPwdReg] = useState(false);
   const [dupP, setDupP] = useState(false);
   const [dupR, setDupR] = useState(false);
-
-  
 
   // ===== VERIFICACIÓN (OTP) =====
   const [pendingEmail, setPendingEmail] = useState(''); // correo principal lower
@@ -51,25 +53,20 @@ export default function AuthPage() {
     };
   };
 
-    // === Validadores estrictos ===
-    const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-    const isCell  = (s: string) => /^\d{9}$/.test(s); // Perú: 9 dígitos
-
-    const isRegisterFormComplete = Boolean(
-      nombres.trim() &&
-      apellidos.trim() &&
-      (tipoDoc === 'DNI' || tipoDoc === 'CE') &&
-      numDoc.trim() &&
-      isCell(celular.trim()) &&
-      isEmail(correoP.trim()) &&
-      isEmail(correoR.trim()) &&
-      pwdReg.trim().length >= 6
-    );
-
-
-  const canSubmitRegister = Boolean(
-    isRegisterFormComplete && !dupP && !dupR && !loading
+  // Validadores
+  const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  const isCell  = (s: string) => /^\d{9}$/.test(s); // Perú: 9 dígitos
+  const isRegisterFormComplete = Boolean(
+    nombres.trim() &&
+    apellidos.trim() &&
+    (tipoDoc === 'DNI' || tipoDoc === 'CE') &&
+    numDoc.trim() &&
+    isCell(celular.trim()) &&
+    isEmail(correoP.trim()) &&
+    isEmail(correoR.trim()) &&
+    pwdReg.trim().length >= 6
   );
+  const canSubmitRegister = Boolean(isRegisterFormComplete && !dupP && !dupR && !loading);
 
   // --------------------------
   // Detección de correos duplicados (VIEW: usuarios_email_check)
@@ -80,12 +77,12 @@ export default function AuthPage() {
         if (!correo) return;
         const emailLC = correo.trim().toLowerCase();
 
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('usuarios_email_check')
           .select('usuario, correo_recuperacion')
           .or(`usuario.eq.${emailLC},correo_recuperacion.eq.${emailLC}`);
 
-        const exists = !error && Array.isArray(data) && data.length > 0;
+        const exists = Array.isArray(data) && data.length > 0;
         if (tipo === 'P') setDupP(exists);
         else setDupR(exists);
       }, 300),
@@ -131,8 +128,8 @@ export default function AuthPage() {
       }
 
       setMsg('Ingreso exitoso.');
-      // Redirige si quieres:
-      // window.location.href = '/orden-de-requerimiento';
+      // 🚀 Redirección al index:
+      router.replace('/'); // o '/index' si tu ruta es esa
     } catch (err: any) {
       setMsg(err.message ?? 'Ocurrió un error.');
     } finally {
@@ -140,12 +137,6 @@ export default function AuthPage() {
     }
   }
 
-  // --------------------------
-  // REGISTRO (envío de OTP a correo principal)
-  // *** NO inserta en tabla `usuarios` desde el cliente.
-  //     Tu trigger/función del backend se encarga tras confirmación,
-  //     o un Edge Function si así lo definiste. ***
-  // --------------------------
   // --------------------------
   // REGISTRO (solo crea cuenta y envía OTP; NO escribe en `usuarios`)
   // --------------------------
@@ -159,29 +150,22 @@ export default function AuthPage() {
     const emailP = correoP.trim().toLowerCase();
     const emailR = correoR.trim().toLowerCase();
 
-    // Doble chequeo de duplicados por si el debounce no corrió
-    const { data: d1, error: e1 } = await supabase
-      .from('usuarios_email_check')
-      .select('usuario')
-      .eq('usuario', emailP);
-
-    if (!e1 && Array.isArray(d1) && d1.length > 0) {
-      setDupP(true);
-      setMsg('Correo principal ya registrado.');
-      setLoading(false);
-      return;
+    // Doble chequeo de duplicados
+    {
+      const { data: d1 } = await supabase
+        .from('usuarios_email_check')
+        .select('usuario').eq('usuario', emailP);
+      if (Array.isArray(d1) && d1.length > 0) {
+        setDupP(true); setMsg('Correo principal ya registrado.'); setLoading(false); return;
+      }
     }
-
-    const { data: d2, error: e2 } = await supabase
-      .from('usuarios_email_check')
-      .select('correo_recuperacion')
-      .eq('correo_recuperacion', emailR);
-
-    if (!e2 && Array.isArray(d2) && d2.length > 0) {
-      setDupR(true);
-      setMsg('Correo de recuperación ya registrado.');
-      setLoading(false);
-      return;
+    {
+      const { data: d2 } = await supabase
+        .from('usuarios_email_check')
+        .select('correo_recuperacion').eq('correo_recuperacion', emailR);
+      if (Array.isArray(d2) && d2.length > 0) {
+        setDupR(true); setMsg('Correo de recuperación ya registrado.'); setLoading(false); return;
+      }
     }
 
     try {
@@ -189,15 +173,8 @@ export default function AuthPage() {
         email: emailP,
         password: pwdReg,
         options: {
-          data: {
-            nombres,
-            apellidos,
-            tipo_doc: tipoDoc,
-            num_doc: numDoc,
-            celular,
-            correo_recuperacion: emailR,
-          },
-          emailRedirectTo: undefined, // usamos OTP, no redirección
+          data: { nombres, apellidos, tipo_doc: tipoDoc, num_doc: numDoc, celular, correo_recuperacion: emailR },
+          emailRedirectTo: undefined, // OTP por código
         },
       });
       if (error) throw error;
@@ -218,7 +195,7 @@ export default function AuthPage() {
   // VERIFICACIÓN OTP
   // --------------------------
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d?$/.test(value)) return; // solo 0-9 y vacio
+    if (!/^\d?$/.test(value)) return; // solo 0-9 y vacío
     const next = [...otp];
     next[index] = value;
     setOtp(next);
@@ -236,61 +213,60 @@ export default function AuthPage() {
     e.preventDefault();
   };
 
-    // --------------------------
-    // VERIFICACIÓN OTP (confirma email y recién inserta en `usuarios`)
-    // --------------------------
-    async function onSubmitVerify(e: React.FormEvent<HTMLFormElement>) {
-      e.preventDefault();
-      const token = otp.join('');
-      if (token.length !== 6 || !pendingEmail) {
-        setMsg('Ingresa los 6 dígitos.');
-        return;
-      }
-      setLoading(true);
-      setMsg(null);
-
-      try {
-        // 1) Confirmar la cuenta (crea sesión)
-        const { error: vErr } = await supabase.auth.verifyOtp({
-          email: pendingEmail,
-          token,
-          type: 'signup',
-        });
-        if (vErr) throw vErr;
-
-        // 2) Obtener user.id de la sesión
-        const { data: gu } = await supabase.auth.getUser();
-        const authUserId = gu?.user?.id;
-        if (!authUserId) throw new Error('No hay sesión activa tras verificar el correo.');
-
-        // 3) Insertar fila de negocio en `usuarios`
-        const { error: insErr } = await supabase.from('usuarios').insert([{
-          auth_user_id: authUserId,
-          nombres,
-          apellidos,
-          tipo_doc: tipoDoc,
-          num_doc: numDoc,
-          celular,
-          usuario: pendingEmail,                    // correo principal
-          correo_recuperacion: correoR.trim().toLowerCase(),
-          estado: 'PENDIENTE',                      // o 'ACTIVO' según tu gobierno
-        }]);
-
-        if (insErr) throw insErr;
-
-        setMsg('¡Correo verificado! Tu cuenta fue creada correctamente.');
-        setMode('login');
-
-        // Limpiar form
-        setNombres(''); setApellidos(''); setTipoDoc('DNI'); setNumDoc('');
-        setCelular(''); setCorreoP(''); setCorreoR(''); setPwdReg('');
-        setOtp(['', '', '', '', '', '']);
-      } catch (err: any) {
-        setMsg(err.message ?? 'Código inválido o expirado.');
-      } finally {
-        setLoading(false);
-      }
+  // --------------------------
+  // VERIFICACIÓN OTP (confirma email e inserta en `usuarios` con ACTIVO)
+  // --------------------------
+  async function onSubmitVerify(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const token = otp.join('');
+    if (token.length !== 6 || !pendingEmail) {
+      setMsg('Ingresa los 6 dígitos.');
+      return;
     }
+    setLoading(true);
+    setMsg(null);
+
+    try {
+      // 1) Confirmar la cuenta (crea sesión)
+      const { error: vErr } = await supabase.auth.verifyOtp({
+        email: pendingEmail,
+        token,
+        type: 'signup',
+      });
+      if (vErr) throw vErr;
+
+      // 2) Obtener user.id de la sesión
+      const { data: gu } = await supabase.auth.getUser();
+      const authUserId = gu?.user?.id;
+      if (!authUserId) throw new Error('No hay sesión activa tras verificar el correo.');
+
+      // 3) Insertar fila de negocio en `usuarios` con estado ACTIVO
+      const { error: insErr } = await supabase.from('usuarios').insert([{
+        auth_user_id: authUserId,
+        nombres,
+        apellidos,
+        tipo_doc: tipoDoc,
+        num_doc: numDoc,
+        celular,
+        usuario: pendingEmail,                    // correo principal
+        correo_recuperacion: correoR.trim().toLowerCase(),
+        estado: 'ACTIVO',                          // <<— ACTIVADO automáticamente
+      }]);
+      if (insErr) throw insErr;
+
+      setMsg('¡Correo verificado! Tu cuenta fue creada correctamente.');
+      setMode('login');
+
+      // Limpiar form
+      setNombres(''); setApellidos(''); setTipoDoc('DNI'); setNumDoc('');
+      setCelular(''); setCorreoP(''); setCorreoR(''); setPwdReg('');
+      setOtp(['', '', '', '', '', '']);
+    } catch (err: any) {
+      setMsg(err.message ?? 'Código inválido o expirado.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // ==========================================================
   // RENDER
@@ -356,7 +332,7 @@ export default function AuthPage() {
               </form>
             </div>
 
-            {/* BACK: REGISTRO & VERIFICACIÓN en el “reverso” */}
+            {/* BACK: REGISTRO & VERIFICACIÓN */}
             <div className="face back">
               <div className="logo" aria-hidden>
                 <Image src="/logo.png" alt="Logo Realty GI" width={64} height={64} priority style={{ objectFit: 'contain' }} />
@@ -434,32 +410,6 @@ export default function AuthPage() {
 
                     <button className="btn" disabled={loading}>
                       {loading ? 'Verificando…' : 'Confirmar código'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn linklike"
-                      disabled={loading || !pendingEmail}
-                      onClick={async () => {
-                        setLoading(true);
-                        setMsg(null);
-                        try {
-                          const { error } = await supabase.auth.resend({
-                            type: 'signup',
-                            email: pendingEmail,
-                          });
-                          if (error) {
-                            console.error('resend error:', error);   // <-- mira consola
-                            throw error;
-                          }
-                          setMsg('Te reenviamos un nuevo código. Revisa bandeja y SPAM.');
-                        } catch (e: any) {
-                          setMsg(e?.message ?? 'No se pudo reenviar el código.');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    >
-                      Reenviar código
                     </button>
 
                     <p className="cta" style={{ marginTop: 10 }}>
