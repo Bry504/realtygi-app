@@ -100,42 +100,49 @@ export default function AuthPage() {
   // --------------------------
   // LOGIN
   // --------------------------
-  async function onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setMsg(null);
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: pwd,
-      });
-      if (error || !data.user) throw new Error('Usuario no reconocido.');
+    async function onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
+      e.preventDefault();
+      setMsg(null);
+      setLoading(true);
 
-      // Verifica estado en tu tabla de negocio
-      const { data: perfil, error: qerr } = await supabase
-        .from('usuarios')
-        .select('estado')
-        .eq('auth_user_id', data.user.id)
-        .single();
+      try {
+        // 1) Login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password: pwd,
+        });
+        if (error || !data?.user) throw new Error('Usuario no reconocido.');
 
-      if (qerr || !perfil) {
-        await supabase.auth.signOut();
-        throw new Error('Usuario no registrado en el sistema.');
+        // 2) Perfil de negocio
+        const { data: perfil, error: qerr } = await supabase
+          .from('usuarios')
+          .select('estado')
+          .eq('auth_user_id', data.user.id)
+          .maybeSingle();
+
+        if (qerr) throw new Error('No se pudo validar tu perfil.');
+        if (!perfil) throw new Error('Usuario no registrado en el sistema.');
+        if (perfil.estado !== 'ACTIVO') {
+          await supabase.auth.signOut();
+          throw new Error('Tu cuenta no está activa (Pendiente/Inactiva).');
+        }
+
+        // 3) Mensaje + redirección (router + fallback)
+        setMsg('Ingreso exitoso.');
+
+        // Intenta con Router
+        await router.replace('/');              // en Next pages, "/" es /pages/index.tsx
+
+        // Fallback duro por si el Router no navega (bloqueadores/adblock, etc.)
+        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+      } catch (err: any) {
+        setMsg(err?.message ?? 'Ocurrió un error.');
+      } finally {
+        setLoading(false);
       }
-      if (perfil.estado !== 'ACTIVO') {
-        await supabase.auth.signOut();
-        throw new Error('Tu cuenta no está activa (Pendiente/Inactiva).');
-      }
-
-      setMsg('Ingreso exitoso.');
-      // 🚀 Redirección al index:
-      router.replace('/'); // o '/index' si tu ruta es esa
-    } catch (err: any) {
-      setMsg(err.message ?? 'Ocurrió un error.');
-    } finally {
-      setLoading(false);
     }
-  }
 
   // --------------------------
   // REGISTRO (solo crea cuenta y envía OTP; NO escribe en `usuarios`)
