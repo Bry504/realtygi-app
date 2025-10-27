@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import supabase from '../lib/supabaseClient';
 
-export default function AuthPage() {
-  // ====== MODO (login/register) ======
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+type Mode = 'login' | 'register' | 'verify';
 
-  // ====== LOGIN (diseño original) ======
+export default function AuthPage() {
+  // ===== Vistas =====
+  const [mode, setMode] = useState<Mode>('login');
+
+  // ===== LOGIN =====
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [remember, setRemember] = useState(false);
 
-  // ====== REGISTRO ======
+  // ===== REGISTRO =====
   const [nombres, setNombres] = useState('');
   const [apellidos, setApellidos] = useState('');
   const [tipoDoc, setTipoDoc] = useState<'DNI' | 'CE'>('DNI');
@@ -29,7 +28,21 @@ export default function AuthPage() {
   const [dupP, setDupP] = useState(false);
   const [dupR, setDupR] = useState(false);
 
-  // Debounce helper
+  
+
+  // ===== VERIFICACIÓN (OTP) =====
+  const [pendingEmail, setPendingEmail] = useState(''); // correo principal lower
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+
+  // ===== UI & mensajes =====
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [remember, setRemember] = useState(false);
+
+  // --------------------------
+  // Helpers
+  // --------------------------
   const debounce = (fn: Function, ms = 400) => {
     let t: any;
     return (...args: any[]) => {
@@ -38,7 +51,23 @@ export default function AuthPage() {
     };
   };
 
-    // Verificación en vivo de correos duplicados (usa la VIEW y lower-case)
+  const isRegisterFormComplete =
+    nombres.trim() &&
+    apellidos.trim() &&
+    tipoDoc &&
+    numDoc.trim() &&
+    celular.trim() &&
+    correoP.trim() &&
+    correoR.trim() &&
+    pwdReg.trim();
+
+  const canSubmitRegister = Boolean(
+    isRegisterFormComplete && !dupP && !dupR && !loading
+  );
+
+  // --------------------------
+  // Detección de correos duplicados (VIEW: usuarios_email_check)
+  // --------------------------
   const checkCorreo = useMemo(
     () =>
       debounce(async (correo: string, tipo: 'P' | 'R') => {
@@ -53,7 +82,7 @@ export default function AuthPage() {
         const exists = !error && Array.isArray(data) && data.length > 0;
         if (tipo === 'P') setDupP(exists);
         else setDupR(exists);
-      }, 350),
+      }, 300),
     []
   );
 
@@ -65,24 +94,21 @@ export default function AuthPage() {
     if (mode === 'register' && correoR) checkCorreo(correoR, 'R');
   }, [correoR, mode, checkCorreo]);
 
-  // ====== LOGIN SUBMIT (igual a tu versión) ======
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // --------------------------
+  // LOGIN
+  // --------------------------
+  async function onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMsg(null);
     setLoading(true);
-
     try {
-      // 1) Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: pwd,
       });
+      if (error || !data.user) throw new Error('Usuario no reconocido.');
 
-      if (error || !data.user) {
-        throw new Error('Usuario no reconocido, por favor regístrese.');
-      }
-
-      // 2) Perfil en tu tabla `usuarios`
+      // Verifica estado en tu tabla de negocio
       const { data: perfil, error: qerr } = await supabase
         .from('usuarios')
         .select('estado')
@@ -91,216 +117,202 @@ export default function AuthPage() {
 
       if (qerr || !perfil) {
         await supabase.auth.signOut();
-        throw new Error('Usuario no reconocido, por favor regístrese.');
+        throw new Error('Usuario no registrado en el sistema.');
       }
-
       if (perfil.estado !== 'ACTIVO') {
         await supabase.auth.signOut();
-        if (perfil.estado === 'PENDIENTE') {
-          throw new Error('Tu cuenta está pendiente de activación.');
-        }
-        throw new Error('Tu cuenta está inactiva. Contacta al administrador.');
+        throw new Error('Tu cuenta no está activa (Pendiente/Inactiva).');
       }
 
-      // 3) OK
       setMsg('Ingreso exitoso.');
+      // Redirige si quieres:
       // window.location.href = '/orden-de-requerimiento';
-    } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : 'Ocurrió un error.');
+    } catch (err: any) {
+      setMsg(err.message ?? 'Ocurrió un error.');
     } finally {
       setLoading(false);
     }
   }
 
-  // ====== REGISTRO SUBMIT ======
+  // --------------------------
+  // REGISTRO (envío de OTP a correo principal)
+  // *** NO inserta en tabla `usuarios` desde el cliente.
+  //     Tu trigger/función del backend se encarga tras confirmación,
+  //     o un Edge Function si así lo definiste. ***
+  // --------------------------
   async function onSubmitRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (dupP || dupR) {
-      setMsg('Correo principal o de recuperación ya registrado. Intenta con otro.');
-      return;
-    }
+    if (!canSubmitRegister) return;
 
     setMsg(null);
     setLoading(true);
 
-    // 0) Verificación directa (por si se saltó el debounce)
-    //    Chequea principal y recuperación contra la VIEW
+    // Verificación directa (por si el debounce no corrió a tiempo)
     const emailP = correoP.trim().toLowerCase();
     const emailR = correoR.trim().toLowerCase();
 
-    // Principal
+    // principal
     {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('usuarios_email_check')
         .select('usuario')
         .eq('usuario', emailP);
-
-      if (!error && data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         setDupP(true);
-        setMsg('Correo principal ya registrado. Intenta con otro.');
+        setMsg('Correo principal ya registrado.');
         setLoading(false);
         return;
       }
     }
-
-    // Recuperación
+    // recuperación
     {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('usuarios_email_check')
         .select('correo_recuperacion')
         .eq('correo_recuperacion', emailR);
-
-      if (!error && data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         setDupR(true);
-        setMsg('Correo de recuperación ya registrado. Intenta con otro.');
+        setMsg('Correo de recuperación ya registrado.');
         setLoading(false);
         return;
       }
     }
+
     try {
-      // 1) Alta en Auth con correo principal
-      const { data: auth, error: authErr } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: emailP,
         password: pwdReg,
+        // Si usas confirmación por email, Supabase envía link + código OTP.
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`, // o tu dominio en prod
           data: {
-            // estos campos vivirán en auth.users.raw_user_meta_data
             nombres,
             apellidos,
             tipo_doc: tipoDoc,
             num_doc: numDoc,
             celular,
             correo_recuperacion: emailR,
-            rol: 'asesor',
-            estado: 'PENDIENTE'
-          }
-        }
-      });
-      if (authErr) throw authErr;
-      // ⚠️ IMPORTANTE: NO intentes insertar en `usuarios` desde el cliente
-      // cuando hay confirmación por email, porque user.id puede ser null.
-      // Solo muestra el mensaje:
-      setMsg('Te enviamos un correo de confirmación. Por favor confírmalo para activar tu cuenta.');
-      setLoading(false);
-      return;
-      const authId = auth.user?.id;
-
-      // 2) Insert en tabla de negocio
-      const { error: insErr } = await supabase.from('usuarios').insert([
-        {
-          auth_user_id: authId,
-          usuario: emailP,                 // 👈 correo principal va aquí
-          nombres,
-          apellidos,
-          tipo_doc: tipoDoc,
-          num_doc: numDoc,
-          celular,
-          correo_recuperacion: emailR,     // 👈 correo de recuperación
-          estado: 'PENDIENTE',
-          rol: 'asesor',
+          },
         },
-      ]);
-      if (insErr) throw insErr;
+      });
+      if (error) throw error;
 
-      setMsg('Registro enviado. Tu cuenta está en PENDIENTE hasta activación.');
-      setMode('login');
+      // Pasamos a la pantalla de verificación
+      setPendingEmail(emailP);
+      setMode('verify');
+      setMsg(
+        'Te enviamos un código de 6 dígitos a tu correo. Ingresa el código para completar el registro.'
+      );
+      setOtp(['', '', '', '', '', '']);
+      // Enfoca primera casilla
+      setTimeout(() => inputsRef.current[0]?.focus(), 80);
     } catch (err: any) {
-      setMsg(err.message ?? 'No se pudo completar el registro.');
+      setMsg(err.message ?? 'No se pudo iniciar el registro.');
     } finally {
       setLoading(false);
     }
   }
 
+  // --------------------------
+  // VERIFICACIÓN OTP
+  // --------------------------
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return; // solo 0-9 y vacio
+    const next = [...otp];
+    next[index] = value;
+    setOtp(next);
+    if (value && index < 5) inputsRef.current[index + 1]?.focus();
+  };
+
+  const handleOtpPaste: React.ClipboardEventHandler<HTMLInputElement> = (e) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (text.length) {
+      const next = text.split('');
+      while (next.length < 6) next.push('');
+      setOtp(next);
+      setTimeout(() => inputsRef.current[5]?.focus(), 0);
+    }
+    e.preventDefault();
+  };
+
+  async function onSubmitVerify(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const token = otp.join('');
+    if (token.length !== 6 || !pendingEmail) {
+      setMsg('Ingresa los 6 dígitos.');
+      return;
+    }
+    setLoading(true);
+    setMsg(null);
+    try {
+      // Verifica el OTP de signup
+      const { error } = await supabase.auth.verifyOtp({
+        email: pendingEmail,
+        token,
+        type: 'signup',
+      });
+      if (error) throw error;
+
+      // Aquí tu trigger/función del backend debería crear/actualizar la fila en `usuarios`.
+      setMsg('¡Correo verificado! Tu cuenta fue creada correctamente.');
+      setMode('login');
+      // Limpia campos del registro si quieres
+      setNombres(''); setApellidos(''); setTipoDoc('DNI'); setNumDoc('');
+      setCelular(''); setCorreoP(''); setCorreoR(''); setPwdReg('');
+    } catch (err: any) {
+      setMsg(err.message ?? 'Código inválido o expirado.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
   return (
     <>
       <Head>
-        <title>Iniciar Sesión — Realty Grupo Inmobiliario</title>
+        <title>Acceso — Realty Grupo Inmobiliario</title>
         <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
       <main className="wrap">
         <div className="overlay" />
-
-        {/* === CONTENEDOR GLASS con FLIP (se mantiene diseño) === */}
-        <div className={`glass ${mode === 'register' ? 'isFlipped' : ''}`}>
+        <div className={`glass ${mode !== 'login' ? 'isFlipped' : ''}`}>
           <div className="flip3d">
-            {/* ===== FRONT: LOGIN (tu diseño original) ===== */}
+            {/* FRONT: LOGIN */}
             <div className="face front">
               <div className="logo" aria-hidden>
-                <Image
-                  src="/logo.png"
-                  alt="Logo Realty GI"
-                  width={64}
-                  height={64}
-                  priority
-                  style={{ objectFit: 'contain' }}
-                />
+                <Image src="/logo.png" alt="Logo Realty GI" width={64} height={64} priority style={{ objectFit: 'contain' }} />
               </div>
-
               <h1>REALTY GRUPO INMOBILIARIO</h1>
 
-              <form onSubmit={onSubmit} className="form" noValidate>
+              <form onSubmit={onSubmitLogin} className="form" noValidate>
                 <label htmlFor="email">Correo Corporativo</label>
                 <div className="field">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="nombre.apellido@realtygi.pe"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
+                  <input id="email" name="email" type="email"
+                    placeholder="nombre.apellido@realtygi.pe" value={email}
+                    onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
                 </div>
 
                 <label htmlFor="password">Contraseña</label>
                 <div className="field pwdWrap">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPwd ? 'text' : 'password'}
-                    placeholder="Contraseña"
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="eyeBtn"
+                  <input id="password" name="password" type={showPwd ? 'text' : 'password'}
+                    placeholder="Contraseña" value={pwd}
+                    onChange={(e) => setPwd(e.target.value)} autoComplete="current-password" required />
+                  <button type="button" className="eyeBtn"
                     onClick={() => setShowPwd((s) => !s)}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    title={showPwd ? 'Ocultar contraseña' : 'Ver contraseña'}
-                  >
-                    {showPwd ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                        <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
+                    title={showPwd ? 'Ocultar contraseña' : 'Ver contraseña'}>
+                    {showPwd ? '🙈' : '👁️'}
                   </button>
                 </div>
 
-                <div className="row">
-                  <label className="remember">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                    />
-                    <span>Recuérdame</span>
-                  </label>
-                </div>
+                <label className="remember">
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                  <span>Recuérdame</span>
+                </label>
 
-                {msg && <div className="msg">{msg}</div>}
+                {msg && mode === 'login' && <div className="msg">{msg}</div>}
 
                 <button type="submit" className="btn" disabled={loading}>
                   {loading ? 'Procesando...' : 'Iniciar Sesión'}
@@ -310,395 +322,106 @@ export default function AuthPage() {
 
                 <p className="cta">
                   ¿No tienes cuenta?{' '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMsg(null);
-                      setMode('register');
-                    }}
-                  >
+                  <a href="#" onClick={(e) => { e.preventDefault(); setMsg(null); setMode('register'); }}>
                     Regístrate aquí
                   </a>
                 </p>
               </form>
             </div>
 
-            {/* ===== BACK: REGISTRO (misma estética + ojito) ===== */}
+            {/* BACK: REGISTRO & VERIFICACIÓN en el “reverso” */}
             <div className="face back">
               <div className="logo" aria-hidden>
-                <Image
-                  src="/logo.png"
-                  alt="Logo Realty GI"
-                  width={64}
-                  height={64}
-                  priority
-                  style={{ objectFit: 'contain' }}
-                />
+                <Image src="/logo.png" alt="Logo Realty GI" width={64} height={64} priority style={{ objectFit: 'contain' }} />
               </div>
 
-              <h1>REGISTRO DE USUARIO</h1>
+              {mode === 'register' && (
+                <>
+                  <h1>REGISTRO DE USUARIO</h1>
+                  <form onSubmit={onSubmitRegister} className="form formRegister" noValidate>
+                    <div className="g2">
+                      <div className="field"><input placeholder="Nombres" value={nombres} onChange={(e) => setNombres(e.target.value)} required /></div>
+                      <div className="field"><input placeholder="Apellidos" value={apellidos} onChange={(e) => setApellidos(e.target.value)} required /></div>
+                    </div>
 
-              <form onSubmit={onSubmitRegister} className="form formRegister" noValidate>
-                <div className="mt8" />
+                    <div className="g2">
+                      <div className="field">
+                        <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value as 'DNI' | 'CE')}>
+                          <option value="DNI">DNI</option>
+                          <option value="CE">CE</option>
+                        </select>
+                      </div>
+                      <div className="field"><input placeholder={tipoDoc} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} required /></div>
+                    </div>
 
-                {/* Nombres + Apellidos */}
-                <div className="g2">
-                  <div className="field">
-                    <input
-                      placeholder="Nombres"
-                      value={nombres}
-                      onChange={(e) => setNombres(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="field">
-                    <input
-                      placeholder="Apellidos"
-                      value={apellidos}
-                      onChange={(e) => setApellidos(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
+                    <div className="field"><input placeholder="Correo principal" type="email" value={correoP} onChange={(e) => setCorreoP(e.target.value)} required /></div>
+                    <div className="errLine">{dupP && <span className="error">Correo principal ya registrado</span>}</div>
 
-                {/* Tipo Doc + Nº Doc */}
-                <div className="g2">
-                  <div className="field">
-                    <select
-                      value={tipoDoc}
-                      onChange={(e) => setTipoDoc(e.target.value as 'DNI' | 'CE')}
-                    >
-                      <option value="DNI">DNI</option>
-                      <option value="CE">CE</option>
-                    </select>
-                  </div>
-                  <div className="field">
-                    <input
-                      placeholder={tipoDoc}
-                      value={numDoc}
-                      onChange={(e) => setNumDoc(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
+                    <div className="field"><input placeholder="Correo de recuperación" type="email" value={correoR} onChange={(e) => setCorreoR(e.target.value)} required /></div>
+                    <div className="errLine">{dupR && <span className="error">Correo de recuperación ya registrado</span>}</div>
 
-                {/* Correo principal */}
-                <div className="field">
-                  <input
-                    placeholder="Correo principal"
-                    type="email"
-                    value={correoP}
-                    onChange={(e) => setCorreoP(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="errLine">
-                  {dupP && <span className="error">Correo principal ya registrado</span>}
-                </div>
+                    <div className="g2">
+                      <div className="field"><input placeholder="Celular" value={celular} onChange={(e) => setCelular(e.target.value)} required /></div>
+                      <div className="field pwdWrap">
+                        <input placeholder="Contraseña" type={showPwdReg ? 'text' : 'password'} value={pwdReg} onChange={(e) => setPwdReg(e.target.value)} required />
+                        <button type="button" className="eyeBtn" onClick={() => setShowPwdReg((s) => !s)}>{showPwdReg ? '🙈' : '👁️'}</button>
+                      </div>
+                    </div>
 
-                {/* Correo de recuperación */}
-                <div className="field">
-                  <input
-                    placeholder="Correo de recuperación"
-                    type="email"
-                    value={correoR}
-                    onChange={(e) => setCorreoR(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="errLine">
-                  {dupR && <span className="error">Correo de recuperación ya registrado</span>}
-                </div>
+                    {msg && mode === 'register' && <div className="msg">{msg}</div>}
 
-                {/* Celular + Contraseña */}
-                <div className="g2">
-                  <div className="field">
-                    <input
-                      placeholder="Celular"
-                      value={celular}
-                      onChange={(e) => setCelular(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="field pwdWrap">
-                    <input
-                      placeholder="Contraseña"
-                      type={showPwdReg ? 'text' : 'password'}
-                      value={pwdReg}
-                      onChange={(e) => setPwdReg(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="eyeBtn"
-                      onClick={() => setShowPwdReg((s) => !s)}
-                      aria-label={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
-                      title={showPwdReg ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    >
-                      {showPwdReg ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.64-1.49 1.7-3.05 3.06-4.41M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8-.53 1.23-1.3 2.42-2.27 3.45" />
-                          <line x1="1" y1="1" x2="23" y2="23" />
-                          <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
+                    <button className="btn" disabled={!canSubmitRegister}>
+                      {loading ? 'Procesando…' : 'Registrarme'}
                     </button>
-                  </div>
-                </div>
 
-                {msg && <div className="msg">{msg}</div>}
+                    <p className="cta">
+                      ¿Ya tienes cuenta?{' '}
+                      <a href="#" onClick={(e) => { e.preventDefault(); setMode('login'); setMsg(null); }}>Iniciar Sesión</a>
+                    </p>
+                  </form>
+                </>
+              )}
 
-                <button className="btn" disabled={loading || dupP || dupR}>
-                  Registrarme
-                </button>
+              {mode === 'verify' && (
+                <>
+                  <h1>CÓDIGO DE VERIFICACIÓN</h1>
+                  <p style={{ marginTop: 6 }}>Hemos enviado un código de 6 dígitos a <b>{pendingEmail}</b></p>
+                  <form onSubmit={onSubmitVerify} className="form" noValidate>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '16px 0' }}>
+                      {otp.map((v, i) => (
+                        <input
+                          key={i}
+                          ref={(el) => {(inputsRef.current[i] = el)}}
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={v}
+                          onChange={(e) => handleOtpChange(i, e.target.value)}
+                          onPaste={i === 0 ? handleOtpPaste : undefined}
+                          style={{ width: 40, height: 46, textAlign: 'center', fontSize: 20, borderRadius: 8, border: '1px solid #d1c4a3' }}
+                          required
+                        />
+                      ))}
+                    </div>
 
-                <p className="cta">
-                  ¿Ya tienes cuenta?{' '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMode('login');
-                      setMsg(null);
-                    }}
-                  >
-                    Iniciar Sesión
-                  </a>
-                </p>
-              </form>
+                    {msg && mode === 'verify' && <div className="msg">{msg}</div>}
+
+                    <button className="btn" disabled={loading}>
+                      {loading ? 'Verificando…' : 'Confirmar código'}
+                    </button>
+
+                    <p className="cta" style={{ marginTop: 10 }}>
+                      ¿Escribiste mal tu correo?{' '}
+                      <a href="#" onClick={(e) => { e.preventDefault(); setMode('register'); setMsg(null); }}>
+                        Volver al registro
+                      </a>
+                    </p>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </div>
       </main>
-
-      <style jsx>{`
-        /* ======= TU ESTILO ORIGINAL ======= */
-        * { font-family: 'Times New Roman', Times, serif; }
-
-        .wrap {
-          min-height: 100vh;
-          display: grid;
-          place-items: center;
-          background-image: url('/auth-bg.jpg');
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .overlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(255, 255, 255, 0.12);
-          z-index: 0;
-        }
-
-        .glass {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-          max-width: 420px;
-          height: 560px; /* más compacto */
-          padding: 0;     /* el padding va en cada cara */
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.18);
-          backdrop-filter: blur(14px) saturate(150%);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
-          color: #222;
-          text-align: center;
-          animation: fadeUp 0.7s ease-out both;
-          perspective: 1400px; /* 3D */
-          overflow: hidden;    /* recorta durante el flip */
-        }
-
-        .logo {
-          width: 80px;
-          height: 80px;
-          margin: 0 auto 10px;
-          border-radius: 50%;
-          background: #000;
-          padding: 8px;
-          display: grid;
-          place-items: center;
-          animation: floaty 6s ease-in-out infinite;
-        }
-
-        h1 {
-          margin: 4px 0 2px 0;
-          font-size: 26px;
-          font-weight: 700;
-          color: #1d1d1d;
-          text-transform: uppercase;
-        }
-
-        label {
-          display: block;
-          text-align: left;
-          font-size: 14px;
-          color: #3a2c1a;
-          margin: 12px 0 6px;
-        }
-
-        /* Unifica el look de inputs y selects */
-        .field input,
-        .field select {
-          width: 100%;
-          height: 42px;
-          padding: 0 14px;
-          border-radius: 8px;
-          border: 1px solid #d1c4a3;
-          outline: none;
-          font-size: 15px;
-          color: #2b1d07;
-          background: rgba(255, 255, 255, 0.95);
-          transition: box-shadow 0.15s ease;
-        }
-        .field input::placeholder { color: #9d8a67; }
-        .field input:focus,
-        .field select:focus { box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3); }
-        .field input:focus::placeholder { color: transparent; }
-
-        .pwdWrap { position: relative; margin-bottom: 6px; }
-        .pwdWrap input { padding-right: 44px; }
-
-        .eyeBtn {
-          position: absolute;
-          right: 10px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 32px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          color: #6a512a;
-        }
-
-        .btn {
-          width: 100%;
-          height: 46px;
-          margin-top: 10px;
-          margin-bottom: 18px;
-          background: #a38147;
-          color: #fff;
-          font-weight: bold;
-          font-size: 17px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-        .btn:hover { background: #8d6e3e; }
-
-        .forgot {
-          display: block;
-          margin-top: 45px;
-          color: #000;
-          font-weight: 700;
-          font-size: 14px;
-          text-decoration: none;
-        }
-
-        .cta {
-          margin-top: 10px;
-          color: #604a23;
-          font-size: 15px;
-        }
-        .cta a { font-weight: bold; color: #fff; text-decoration: none; }
-        .cta a:hover { text-decoration: underline; }
-
-        .msg { margin-top: 6px; color: #604a23; font-size: 14px; }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes floaty {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-
-        @media (max-width: 480px) {
-          .glass { max-width: 420px; }
-        }
-
-        .row {
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          margin: 4px 0 6px;
-        }
-        .remember {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          color: #3a2c1a;
-          cursor: pointer;
-        }
-        .remember input {
-          width: 16px;
-          height: 16px;
-          accent-color: #a38147;
-        }
-
-        /* ======= NUEVO PARA FLIP Y REGISTRO ======= */
-        .flip3d {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          transform-style: preserve-3d;
-          transition: transform 0.8s ease;
-        }
-        .glass.isFlipped .flip3d { transform: rotateY(180deg); }
-
-        .face {
-          position: absolute;
-          inset: 0;
-          padding: 32px 28px;
-          backface-visibility: hidden;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
-          text-align: center;
-        }
-        .back { transform: rotateY(180deg); }
-
-        /* Fila de 2 columnas (usada en registro) */
-        .g2 {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 4px;     /* entre columnas */
-        }
-          .formRegister {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;              /* separa todas las filas por igual */
-        }
-
-        /* entre filas del registro, verdaderamente corto */
-        .formRegister .field,
-        .formRegister .g2 {
-        }
-
-        .field,
-        .pwdWrap {
-          margin: 0;             /* quita márgenes que rompían el ritmo */
-        }
-
-        .errLine { min-height: 14px; line-height: 14px; }
-        .error { color: #c81e1e; font-size: 12px; display: inline-block; }
-      `}</style>
     </>
   );
 }
