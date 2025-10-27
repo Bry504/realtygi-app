@@ -1,11 +1,20 @@
 // /lib/supabaseClient.ts
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const supabase = createBrowserClient(supabaseUrl, supabaseKey);
-// Este cliente usa cookies (no localStorage), lo que permite
-// que el middleware del edge lea la sesión correctamente.
+// ⬇⬇⬇ AGREGA ESTO
+if (typeof window !== 'undefined') {
+  console.log('[Supabase ENV]', {
+    hasUrl: !!url, hasAnon: !!anon,
+    urlSample: url ? url.slice(0, 24) + '...' : null
+  });
+  if (!url || !anon) {
+    console.error('Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  }
+}
+// ⬆⬆⬆
 
+const supabase = createClient(url, anon);
 export default supabase;

@@ -1,41 +1,32 @@
 // /middleware.ts
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  const url = req.nextUrl;
-  const pathname = url.pathname;
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  // Cookies que pone Supabase Auth en el navegador
+  const hasAccess = req.cookies.get('sb-access-token') || req.cookies.get('supabase-auth-token');
 
-  // Rutas públicas (sin sesión)
-  const PUBLIC = new Set<string>([
-    '/auth',
-    // agrega aquí otras públicas si necesitas
-  ]);
+  // Rutas públicas
+  const isPublic = pathname.startsWith('/auth') || pathname.startsWith('/_next') || pathname.startsWith('/public');
 
-  // Si la ruta es pública: deja pasar
-  if (PUBLIC.has(pathname)) return NextResponse.next();
-
-  // Lee el token de Supabase: cookie 'sb-*-auth-token'
-  const hasToken = Array.from(req.cookies.getAll()).some((c) =>
-    c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
-  );
-
-  // Si NO hay token y la ruta es privada -> manda a /auth
-  if (!hasToken) {
-    const loginUrl = new URL('/auth', req.url);
-    loginUrl.searchParams.set('next', pathname); // opcional: volver después de login
-    return NextResponse.redirect(loginUrl);
+  if (!hasAccess && !isPublic) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/auth';
+    url.searchParams.set('next', pathname || '/');
+    return NextResponse.redirect(url);
   }
 
-  // Hay sesión -> deja pasar
+  // Si YA está autenticado y está en /auth, mándalo a la home
+  if (hasAccess && pathname === '/auth') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 
-// ⚠️ Lista explícitamente rutas privadas, sin regex complejos
 export const config = {
-  matcher: [
-    '/',                          // tu página principal (privada)
-    '/orden-de-requerimiento',    // otra privada (ejemplo)
-    // agrega aquí más rutas privadas si aplican
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

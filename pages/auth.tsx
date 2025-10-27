@@ -44,16 +44,39 @@ export default function AuthPage() {
   const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
   const isCell  = (s: string) => /^\d{9}$/.test(s);
 
+  // ⬇⬇⬇ AGREGA ESTO
+  useEffect(() => {
+    console.log('[Auth] Componente montado. query.next =', router.query.next, 'safeNext =', safeNext);
+  }, [router.query.next, safeNext]);
+
+  useEffect(() => {
+    const hStart = (url: string) => console.log('[Router] routeChangeStart ->', url);
+    const hErr = (err: any, url: string) => console.warn('[Router] routeChangeError ->', url, err);
+    router.events.on('routeChangeStart', hStart);
+    router.events.on('routeChangeError', hErr);
+    return () => {
+      router.events.off('routeChangeStart', hStart);
+      router.events.off('routeChangeError', hErr);
+    };
+  }, [router.events]);
+
+  useEffect(() => {
+    router.prefetch(safeNext).catch(()=>{});
+  }, [router, safeNext]);
+  // ⬆⬆⬆
+
   // -------------- LOGIN --------------
   async function onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMsg(null);
     setLoading(true);
     try {
+      console.log('[Auth] onSubmitLogin START', { email }); // ⬅️ AGREGA
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: pwd,
       });
+      console.log('[Auth] signInWithPassword result:', { user: data?.user, error }); // ⬅️ mantiene
       console.log('signInWithPassword -> data:', data, 'error:', error);
       if (error || !data?.user) throw error ?? new Error('Usuario no reconocido.');
 
@@ -75,6 +98,8 @@ export default function AuthPage() {
         console.warn('Lectura de perfil falló (RLS/políticas). No se bloquea el login.', e);
       }
 
+       console.log('[Auth] Redirigiendo a', safeNext); // ⬅️ AGREGA
+
       // Redirigir (primero Router, luego por si acaso)
       try {
         await router.replace(safeNext);
@@ -85,10 +110,11 @@ export default function AuthPage() {
       }
       return;
     } catch (err: any) {
-      console.error('Login error:', err);
+      console.error('[Auth] Login error:', err); // ⬅️ Asegura prefijo
       setMsg(err?.message ?? 'Error iniciando sesión.');
     } finally {
       setLoading(false);
+      console.log('[Auth] onSubmitLogin END'); // ⬅️ AGREGA
     }
   }
 
