@@ -1,29 +1,30 @@
-// /pages/index.tsx
-import type { NextPage } from 'next';
-import { useRouter } from 'next/router';
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useEffect, useState } from 'react';
+import supabase from '../lib/supabaseClient';
 
-const IndexPage: NextPage = () => {
-  const session = useSession();
-  const supabase = useSupabaseClient();
-  const router = useRouter();
+export default function IndexPage() {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Si aún no hay sesión (el middleware ya protege, pero por UX):
-  if (!session) return <p>Cargando...</p>;
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data?.session ?? null);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <p>Cargando…</p>;
 
   return (
-    <main style={{ padding: 40 }}>
-      <h1>Bienvenido, {session.user?.email}</h1>
-      <button
-        onClick={async () => {
-          await supabase.auth.signOut();
-          router.replace('/auth');
-        }}
-      >
-        Cerrar sesión
-      </button>
+    <main style={{ padding: 24 }}>
+      <h1>Home</h1>
+      <h3>Sesión actual</h3>
+      <pre style={{ background:'#f5f5f5', padding:12, borderRadius:8 }}>
+        {JSON.stringify(session?.user ?? null, null, 2)}
+      </pre>
+
+      <div style={{ marginTop: 16 }}>
+        <a href="/auth">Ir a /auth</a>
+      </div>
     </main>
   );
-};
-
-export default IndexPage;
+}
