@@ -4,26 +4,11 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  // Cookies que pone Supabase Auth en el navegador
-  const hasAccess = req.cookies.get('sb-access-token') || req.cookies.get('supabase-auth-token');
-
-  // Rutas públicas
-  const isPublic = pathname.startsWith('/auth') || pathname.startsWith('/_next') || pathname.startsWith('/public');
-
-  if (!hasAccess && !isPublic) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/auth';
-    url.searchParams.set('next', pathname || '/');
-    return NextResponse.redirect(url);
+  // Deja públicas estas rutas
+  if (pathname === '/' || pathname.startsWith('/auth')) {
+    return NextResponse.next();
   }
-
-  // Si YA está autenticado y está en /auth, mándalo a la home
-  if (hasAccess && pathname === '/auth') {
-    const url = req.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
-  }
-
+  // (temporal) no bloquees nada más
   return NextResponse.next();
 }
 
