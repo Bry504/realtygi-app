@@ -1,34 +1,42 @@
+// /middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+// Rutas públicas (no requieren login)
+const PUBLIC_PATHS = [
+  '/auth',          // login / registro
+  '/_next',         // assets internos de Next.js
+  '/api',           // funciones API
+  '/favicon.ico',
+  '/logo.png',
+  '/auth-bg.jpg',
+];
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  // 🔓 Rutas públicas
-  const publicPaths = ['/auth', '/_next', '/favicon.ico'];
-  if (publicPaths.some((p) => req.nextUrl.pathname.startsWith(p))) {
-    return res;
+  // 1️⃣ Permitir si es una ruta pública
+  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next();
   }
 
-  // 🔒 Si no hay sesión activa, redirige al login
-  if (!session) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/auth';
-    return NextResponse.redirect(redirectUrl);
+  // 2️⃣ Leer cookie de sesión Supabase
+  const access_token = req.cookies.get('sb-access-token')?.value;
+
+  // 3️⃣ Si no hay sesión, redirigir a /auth
+  if (!access_token) {
+    const loginUrl = new URL('/auth', req.url);
+    loginUrl.searchParams.set('redirectedFrom', pathname); // opcional: para volver luego
+    return NextResponse.redirect(loginUrl);
   }
 
-  return res;
+  // 4️⃣ Si hay sesión, permitir acceso
+  return NextResponse.next();
 }
 
+// 5️⃣ Aplica a todas las rutas menos archivos estáticos
 export const config = {
   matcher: [
-    // Protege todo MENOS APIs, assets de Next y archivos estáticos del /public
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.png|auth-bg.jpg).*)',
   ],
 };
