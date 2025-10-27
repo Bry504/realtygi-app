@@ -1,51 +1,39 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import supabase from '../lib/supabaseClient';
+// /middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-export default function IndexPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+// Rutas públicas (sin login)
+const PUBLIC_PATHS = ['/auth', '/api', '/favicon.ico', '/_next', '/logo.png', '/auth-bg.jpg'];
 
-  useEffect(() => {
-    let unsub = () => {};
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-    // 1) Sesión actual (más rápido/fiable que getUser al primer render)
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data?.session?.user ?? null;
-      if (!u) {
-        router.replace('/auth');
-      } else {
-        setUser(u);
-      }
-      setLoading(false);
-    });
+  // Permitir rutas públicas
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
 
-    // 2) Si la sesión cambia (login/logout), actualiza o redirige
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
-      const u = sess?.user ?? null;
-      if (!u) router.replace('/auth');
-      else setUser(u);
-    });
-    unsub = () => sub?.subscription?.unsubscribe();
+  // Crear respuesta y cliente con helpers (lee/renueva cookies)
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-    return () => unsub();
-  }, [router]);
+  // Obtener sesión (si hay, helpers la sacan de cookies)
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (loading) return <p>Cargando...</p>;
-  if (!user) return null; // el redirect ya corre
+  // Si NO hay sesión ⇒ a /auth
+  if (!session) {
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = '/auth';
+    loginUrl.searchParams.set('redirectedFrom', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
-  return (
-    <main style={{ padding: 40 }}>
-      <h1>Bienvenido, {user.email}</h1>
-      <button
-        onClick={async () => {
-          await supabase.auth.signOut();
-          router.replace('/auth');
-        }}
-      >
-        Cerrar sesión
-      </button>
-    </main>
-  );
+  // Hay sesión ⇒ permitir
+  return res;
 }
+
+// Aplica a todo salvo estáticos
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.png|auth-bg.jpg).*)'],
+};

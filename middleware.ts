@@ -1,42 +1,39 @@
 // /middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-// Rutas públicas (no requieren login)
-const PUBLIC_PATHS = [
-  '/auth',          // login / registro
-  '/_next',         // assets internos de Next.js
-  '/api',           // funciones API
-  '/favicon.ico',
-  '/logo.png',
-  '/auth-bg.jpg',
-];
+// Rutas públicas (sin login)
+const PUBLIC_PATHS = ['/auth', '/api', '/favicon.ico', '/_next', '/logo.png', '/auth-bg.jpg'];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1️⃣ Permitir si es una ruta pública
-  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+  // Permitir rutas públicas
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // 2️⃣ Leer cookie de sesión Supabase
-  const access_token = req.cookies.get('sb-access-token')?.value;
+  // Crear respuesta y cliente con helpers (lee/renueva cookies)
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-  // 3️⃣ Si no hay sesión, redirigir a /auth
-  if (!access_token) {
-    const loginUrl = new URL('/auth', req.url);
-    loginUrl.searchParams.set('redirectedFrom', pathname); // opcional: para volver luego
+  // Obtener sesión (si hay, helpers la sacan de cookies)
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Si NO hay sesión ⇒ a /auth
+  if (!session) {
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = '/auth';
+    loginUrl.searchParams.set('redirectedFrom', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 4️⃣ Si hay sesión, permitir acceso
-  return NextResponse.next();
+  // Hay sesión ⇒ permitir
+  return res;
 }
 
-// 5️⃣ Aplica a todas las rutas menos archivos estáticos
+// Aplica a todo salvo estáticos
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logo.png|auth-bg.jpg).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.png|auth-bg.jpg).*)'],
 };
