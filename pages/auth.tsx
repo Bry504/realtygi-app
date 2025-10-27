@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import supabase from '../lib/supabaseClient';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 
 type Mode = 'login' | 'register' | 'verify';
 
@@ -11,6 +11,7 @@ export default function AuthPage() {
   const router = useRouter();
   const nextParam = typeof router.query.next === 'string' ? router.query.next : '/';
   const safeNext = nextParam?.startsWith('/') ? nextParam : '/';
+  const supabase = useSupabaseClient(); // 👈 ESTE cliente escribe cookies
 
   // vistas
   const [mode, setMode] = useState<Mode>('login');
