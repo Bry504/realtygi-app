@@ -1,39 +1,29 @@
-// /middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+// /pages/index.tsx
+import type { NextPage } from 'next';
+import { useRouter } from 'next/router';
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 
-// Rutas públicas (sin login)
-const PUBLIC_PATHS = ['/auth', '/api', '/favicon.ico', '/_next', '/logo.png', '/auth-bg.jpg'];
+const IndexPage: NextPage = () => {
+  const session = useSession();
+  const supabase = useSupabaseClient();
+  const router = useRouter();
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  // Si aún no hay sesión (el middleware ya protege, pero por UX):
+  if (!session) return <p>Cargando...</p>;
 
-  // Permitir rutas públicas
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
-
-  // Crear respuesta y cliente con helpers (lee/renueva cookies)
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-
-  // Obtener sesión (si hay, helpers la sacan de cookies)
-  const { data: { session } } = await supabase.auth.getSession();
-
-  // Si NO hay sesión ⇒ a /auth
-  if (!session) {
-    const loginUrl = req.nextUrl.clone();
-    loginUrl.pathname = '/auth';
-    loginUrl.searchParams.set('redirectedFrom', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Hay sesión ⇒ permitir
-  return res;
-}
-
-// Aplica a todo salvo estáticos
-export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.png|auth-bg.jpg).*)'],
+  return (
+    <main style={{ padding: 40 }}>
+      <h1>Bienvenido, {session.user?.email}</h1>
+      <button
+        onClick={async () => {
+          await supabase.auth.signOut();
+          router.replace('/auth');
+        }}
+      >
+        Cerrar sesión
+      </button>
+    </main>
+  );
 };
+
+export default IndexPage;
