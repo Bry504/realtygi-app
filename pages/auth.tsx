@@ -68,14 +68,18 @@ export default function AuthPage() {
   // -------------- LOGIN --------------
   async function onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+      console.log('[Auth] onSubmitLogin triggered'); // 👈 agrega esto
+      console.log('[Auth] onSubmitLogin TRIGGER');            // <-- NUEVO
     setMsg(null);
     setLoading(true);
     try {
       console.log('[Auth] onSubmitLogin START', { email }); // ⬅️ AGREGA
+      console.log('[Auth] START', { email });               // <-- NUEVO
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: pwd,
       });
+      console.log('[Auth] RESULT', { user: data?.user, error }); // <-- NUEVO
       console.log('[Auth] signInWithPassword result:', { user: data?.user, error }); // ⬅️ mantiene
       console.log('signInWithPassword -> data:', data, 'error:', error);
       if (error || !data?.user) throw error ?? new Error('Usuario no reconocido.');
@@ -102,6 +106,7 @@ export default function AuthPage() {
 
       // Redirigir (primero Router, luego por si acaso)
       try {
+        console.log('[Auth] Redirigiendo a', safeNext);
         await router.replace(safeNext);
       } finally {
         if (typeof window !== 'undefined' && window.location.pathname !== safeNext) {
@@ -260,7 +265,7 @@ export default function AuthPage() {
 
                 {msg && mode === 'login' && <div className="msg">{msg}</div>}
 
-                <button type="submit" className="btn" disabled={loading}>
+                <button type="submit" className="btn" disabled={loading}onClick={() => console.log('[Auth] CLICK submit')}>
                   {loading ? 'Procesando...' : 'Iniciar Sesión'}
                 </button>
 
