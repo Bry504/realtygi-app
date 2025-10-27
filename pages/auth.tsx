@@ -265,9 +265,20 @@ export default function AuthPage() {
 
                 {msg && mode === 'login' && <div className="msg">{msg}</div>}
 
-                <button type="submit" className="btn" disabled={loading}onClick={() => console.log('[Auth] CLICK submit')}>
-                  {loading ? 'Procesando...' : 'Iniciar Sesión'}
-                </button>
+                <button
+                    type="submit"
+                    className="btn"
+                    disabled={loading}
+                    onClick={(e) => {
+                      console.log('[Auth] BUTTON CLICK');
+                      // fuerza el evento submit del form (por si el click no lo dispara)
+                      e.currentTarget.form?.dispatchEvent(
+                        new Event('submit', { cancelable: true, bubbles: true })
+                      );
+                    }}
+                  >
+                    {loading ? 'Procesando...' : 'Iniciar Sesión'}
+                  </button>
 
                 <p className="cta">¿No tienes cuenta?{' '}
                   <a href="#" onClick={(e)=>{e.preventDefault(); setMsg(null); setMode('register');}}>Regístrate aquí</a>
@@ -284,7 +295,7 @@ export default function AuthPage() {
               {mode === 'register' && (
                 <>
                   <h1>REGISTRO DE USUARIO</h1>
-                  <form onSubmit={onSubmitRegister} className="form formRegister" noValidate>
+                  <form onSubmit={onSubmitRegister} className="form formRegister">
                     <div className="g2">
                       <div className="field"><input placeholder="Nombres" value={nombres} onChange={(e)=>setNombres(e.target.value)} required /></div>
                       <div className="field"><input placeholder="Apellidos" value={apellidos} onChange={(e)=>setApellidos(e.target.value)} required /></div>
