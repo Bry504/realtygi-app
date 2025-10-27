@@ -435,6 +435,32 @@ export default function AuthPage() {
                     <button className="btn" disabled={loading}>
                       {loading ? 'Verificando…' : 'Confirmar código'}
                     </button>
+                    <button
+                      type="button"
+                      className="btn linklike"
+                      disabled={loading || !pendingEmail}
+                      onClick={async () => {
+                        setLoading(true);
+                        setMsg(null);
+                        try {
+                          const { error } = await supabase.auth.resend({
+                            type: 'signup',
+                            email: pendingEmail,
+                          });
+                          if (error) {
+                            console.error('resend error:', error);   // <-- mira consola
+                            throw error;
+                          }
+                          setMsg('Te reenviamos un nuevo código. Revisa bandeja y SPAM.');
+                        } catch (e: any) {
+                          setMsg(e?.message ?? 'No se pudo reenviar el código.');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                    >
+                      Reenviar código
+                    </button>
 
                     <p className="cta" style={{ marginTop: 10 }}>
                       ¿Escribiste mal tu correo?{' '}
