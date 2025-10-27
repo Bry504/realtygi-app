@@ -128,15 +128,9 @@ export default function AuthPage() {
         }
 
         
-      // Redirección robusta: primero router, luego forzamos con location
-      try {
-        await router.replace('/');
-      } finally {
-        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-          window.location.assign('/'); // fuerza navegación aunque el Router falle
-        }
-      }
-      return; // evita más renders en esta vista
+      // después de verificar que el perfil está ACTIVO:
+      window.location.href = '/';  // fuerza navegación sin depender del Router
+      return;
       } catch (err: any) {
         setMsg(err?.message ?? 'Ocurrió un error.');
       } finally {
