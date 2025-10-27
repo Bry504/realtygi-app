@@ -51,15 +51,21 @@ export default function AuthPage() {
     };
   };
 
-  const isRegisterFormComplete =
-    nombres.trim() &&
-    apellidos.trim() &&
-    tipoDoc &&
-    numDoc.trim() &&
-    celular.trim() &&
-    correoP.trim() &&
-    correoR.trim() &&
-    pwdReg.trim();
+    // === Validadores estrictos ===
+    const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+    const isCell  = (s: string) => /^\d{9}$/.test(s); // Perú: 9 dígitos
+
+    const isRegisterFormComplete = Boolean(
+      nombres.trim() &&
+      apellidos.trim() &&
+      (tipoDoc === 'DNI' || tipoDoc === 'CE') &&
+      numDoc.trim() &&
+      isCell(celular.trim()) &&
+      isEmail(correoP.trim()) &&
+      isEmail(correoR.trim()) &&
+      pwdReg.trim().length >= 6
+    );
+
 
   const canSubmitRegister = Boolean(
     isRegisterFormComplete && !dupP && !dupR && !loading
@@ -140,6 +146,9 @@ export default function AuthPage() {
   //     Tu trigger/función del backend se encarga tras confirmación,
   //     o un Edge Function si así lo definiste. ***
   // --------------------------
+  // --------------------------
+  // REGISTRO (solo crea cuenta y envía OTP; NO escribe en `usuarios`)
+  // --------------------------
   async function onSubmitRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!canSubmitRegister) return;
@@ -147,42 +156,38 @@ export default function AuthPage() {
     setMsg(null);
     setLoading(true);
 
-    // Verificación directa (por si el debounce no corrió a tiempo)
     const emailP = correoP.trim().toLowerCase();
     const emailR = correoR.trim().toLowerCase();
 
-    // principal
-    {
-      const { data } = await supabase
-        .from('usuarios_email_check')
-        .select('usuario')
-        .eq('usuario', emailP);
-      if (Array.isArray(data) && data.length > 0) {
-        setDupP(true);
-        setMsg('Correo principal ya registrado.');
-        setLoading(false);
-        return;
-      }
+    // Doble chequeo de duplicados por si el debounce no corrió
+    const { data: d1, error: e1 } = await supabase
+      .from('usuarios_email_check')
+      .select('usuario')
+      .eq('usuario', emailP);
+
+    if (!e1 && Array.isArray(d1) && d1.length > 0) {
+      setDupP(true);
+      setMsg('Correo principal ya registrado.');
+      setLoading(false);
+      return;
     }
-    // recuperación
-    {
-      const { data } = await supabase
-        .from('usuarios_email_check')
-        .select('correo_recuperacion')
-        .eq('correo_recuperacion', emailR);
-      if (Array.isArray(data) && data.length > 0) {
-        setDupR(true);
-        setMsg('Correo de recuperación ya registrado.');
-        setLoading(false);
-        return;
-      }
+
+    const { data: d2, error: e2 } = await supabase
+      .from('usuarios_email_check')
+      .select('correo_recuperacion')
+      .eq('correo_recuperacion', emailR);
+
+    if (!e2 && Array.isArray(d2) && d2.length > 0) {
+      setDupR(true);
+      setMsg('Correo de recuperación ya registrado.');
+      setLoading(false);
+      return;
     }
 
     try {
       const { error } = await supabase.auth.signUp({
         email: emailP,
         password: pwdReg,
-        // Si usas confirmación por email, Supabase envía link + código OTP.
         options: {
           data: {
             nombres,
@@ -192,18 +197,15 @@ export default function AuthPage() {
             celular,
             correo_recuperacion: emailR,
           },
+          emailRedirectTo: undefined, // usamos OTP, no redirección
         },
       });
       if (error) throw error;
 
-      // Pasamos a la pantalla de verificación
       setPendingEmail(emailP);
       setMode('verify');
-      setMsg(
-        'Te enviamos un código de 6 dígitos a tu correo. Ingresa el código para completar el registro.'
-      );
+      setMsg('Te enviamos un código de 6 dígitos a tu correo. Ingresa el código para completar el registro.');
       setOtp(['', '', '', '', '', '']);
-      // Enfoca primera casilla
       setTimeout(() => inputsRef.current[0]?.focus(), 80);
     } catch (err: any) {
       setMsg(err.message ?? 'No se pudo iniciar el registro.');
@@ -234,36 +236,61 @@ export default function AuthPage() {
     e.preventDefault();
   };
 
-  async function onSubmitVerify(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const token = otp.join('');
-    if (token.length !== 6 || !pendingEmail) {
-      setMsg('Ingresa los 6 dígitos.');
-      return;
-    }
-    setLoading(true);
-    setMsg(null);
-    try {
-      // Verifica el OTP de signup
-      const { error } = await supabase.auth.verifyOtp({
-        email: pendingEmail,
-        token,
-        type: 'signup',
-      });
-      if (error) throw error;
+    // --------------------------
+    // VERIFICACIÓN OTP (confirma email y recién inserta en `usuarios`)
+    // --------------------------
+    async function onSubmitVerify(e: React.FormEvent<HTMLFormElement>) {
+      e.preventDefault();
+      const token = otp.join('');
+      if (token.length !== 6 || !pendingEmail) {
+        setMsg('Ingresa los 6 dígitos.');
+        return;
+      }
+      setLoading(true);
+      setMsg(null);
 
-      // Aquí tu trigger/función del backend debería crear/actualizar la fila en `usuarios`.
-      setMsg('¡Correo verificado! Tu cuenta fue creada correctamente.');
-      setMode('login');
-      // Limpia campos del registro si quieres
-      setNombres(''); setApellidos(''); setTipoDoc('DNI'); setNumDoc('');
-      setCelular(''); setCorreoP(''); setCorreoR(''); setPwdReg('');
-    } catch (err: any) {
-      setMsg(err.message ?? 'Código inválido o expirado.');
-    } finally {
-      setLoading(false);
+      try {
+        // 1) Confirmar la cuenta (crea sesión)
+        const { error: vErr } = await supabase.auth.verifyOtp({
+          email: pendingEmail,
+          token,
+          type: 'signup',
+        });
+        if (vErr) throw vErr;
+
+        // 2) Obtener user.id de la sesión
+        const { data: gu } = await supabase.auth.getUser();
+        const authUserId = gu?.user?.id;
+        if (!authUserId) throw new Error('No hay sesión activa tras verificar el correo.');
+
+        // 3) Insertar fila de negocio en `usuarios`
+        const { error: insErr } = await supabase.from('usuarios').insert([{
+          auth_user_id: authUserId,
+          nombres,
+          apellidos,
+          tipo_doc: tipoDoc,
+          num_doc: numDoc,
+          celular,
+          usuario: pendingEmail,                    // correo principal
+          correo_recuperacion: correoR.trim().toLowerCase(),
+          estado: 'PENDIENTE',                      // o 'ACTIVO' según tu gobierno
+        }]);
+
+        if (insErr) throw insErr;
+
+        setMsg('¡Correo verificado! Tu cuenta fue creada correctamente.');
+        setMode('login');
+
+        // Limpiar form
+        setNombres(''); setApellidos(''); setTipoDoc('DNI'); setNumDoc('');
+        setCelular(''); setCorreoP(''); setCorreoR(''); setPwdReg('');
+        setOtp(['', '', '', '', '', '']);
+      } catch (err: any) {
+        setMsg(err.message ?? 'Código inválido o expirado.');
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
   // ==========================================================
   // RENDER
