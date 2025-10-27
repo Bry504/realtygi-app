@@ -1,46 +1,37 @@
-// /pages/index.tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import supabase from '../lib/supabaseClient';
+import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 
 export default function IndexPage() {
+  const supabase = useSupabaseClient();
+  const user = useUser(); // obtiene el usuario actual desde el helper
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsub = () => {};
-    // 1) Carga de sesión
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data?.session?.user ?? null;
-      if (!u) router.replace('/auth');
-      else setUser(u);
-      setLoading(false);
-    });
-    // 2) Observador auth
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user ?? null;
-      if (!u) router.replace('/auth');
-      else setUser(u);
-    });
-    unsub = () => sub?.subscription?.unsubscribe();
-    return () => unsub();
-  }, [router]);
+    if (user === undefined) return; // aún cargando
+    if (!user) router.replace('/auth');
+    else setLoading(false);
+  }, [user, router]);
 
-  if (loading) return <p>Cargando...</p>;
-  if (!user) return null;
+  const handleLogout = async () => {
+    try {
+      // 1️⃣ Cierra sesión del cliente (limpia localStorage)
+      await supabase.auth.signOut();
+      // 2️⃣ Llama al endpoint para limpiar cookies httpOnly
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } finally {
+      // 3️⃣ Redirige al login
+      router.replace('/auth');
+    }
+  };
+
+  if (loading || !user) return <p style={{ padding: 40 }}>Cargando...</p>;
 
   return (
     <main style={{ padding: 40 }}>
       <h1>Bienvenido, {user.email}</h1>
-      <button
-        onClick={async () => {
-          await supabase.auth.signOut();
-          router.replace('/auth');
-        }}
-      >
-        Cerrar sesión
-      </button>
+      <button onClick={handleLogout}>Cerrar sesión</button>
     </main>
   );
 }

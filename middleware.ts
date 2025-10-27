@@ -6,17 +6,21 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const { pathname } = req.nextUrl;
 
-  const supabase = createMiddlewareClient({ req, res });
-  const { data: { session } } = await supabase.auth.getSession();
-
-  const isAuth = !!session;
-  const isAuthRoute = pathname.startsWith('/auth');
+  // No proteger API ni estáticos
   const isPublic =
+    pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/public') ||
     pathname === '/favicon.ico';
 
-  if (!isAuth && !isAuthRoute && !isPublic) {
+  if (isPublic) return res;
+
+  const supabase = createMiddlewareClient({ req, res });
+  const { data: { session } } = await supabase.auth.getSession();
+  const isAuth = !!session;
+  const isAuthRoute = pathname.startsWith('/auth');
+
+  if (!isAuth && !isAuthRoute) {
     const url = req.nextUrl.clone();
     url.pathname = '/auth';
     url.searchParams.set('next', pathname || '/');
@@ -29,9 +33,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return res; // 👈 importante devolver el mismo res
+  return res;
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
