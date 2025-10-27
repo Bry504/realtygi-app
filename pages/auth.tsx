@@ -127,16 +127,16 @@ export default function AuthPage() {
           throw new Error('Tu cuenta no está activa (Pendiente/Inactiva).');
         }
 
-        // 3) Mensaje + redirección (router + fallback)
+        // 3) Redirección inmediata
         setMsg('Ingreso exitoso.');
 
-        // Intenta con Router
-        await router.replace('/');              // en Next pages, "/" es /pages/index.tsx
-
-        // Fallback duro por si el Router no navega (bloqueadores/adblock, etc.)
-        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-          window.location.href = '/';
-        }
+        // Evita que se vea el mensaje en pantalla
+        setTimeout(async () => {
+          await router.replace('/');
+          if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+            window.location.href = '/';
+          }
+        }, 100); // pequeño delay para estabilidad visual
       } catch (err: any) {
         setMsg(err?.message ?? 'Ocurrió un error.');
       } finally {
