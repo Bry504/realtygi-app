@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import '../styles/auth.css';
 
 type Mode = 'login' | 'register' | 'verify';
 
@@ -241,7 +242,7 @@ export default function AuthPage() {
 
       <main className="wrap">
         <div className="overlay" />
-        <div className={`glass ${mode !== 'login' ? 'isFlipped' : ''}`}>
+        <div className={`auth-glass ${mode !== 'login' ? 'isFlipped' : ''}`}>
           <div className="flip3d">
             {/* LOGIN */}
             <div className="face front">
@@ -362,3 +363,224 @@ export default function AuthPage() {
     </>
   );
 }
+<style jsx>{`
+  * { font-family: 'Times New Roman', Times, serif; }
+
+  .wrap {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background-image: url('/auth-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.12);
+    z-index: 0;
+  }
+
+  .glass {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    height: 560px;
+    padding: 0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    color: #222;
+    text-align: center;
+    animation: fadeUp 0.7s ease-out both;
+    perspective: 1400px;
+    overflow: hidden;
+  }
+
+  .logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background: #000;
+    padding: 8px;
+    display: grid;
+    place-items: center;
+    animation: floaty 6s ease-in-out infinite;
+  }
+
+  h1 {
+    margin: 4px 0 2px 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #1d1d1d;
+    text-transform: uppercase;
+  }
+
+  label {
+    display: block;
+    text-align: left;
+    font-size: 14px;
+    color: #3a2c1a;
+    margin: 12px 0 6px;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid #d1c4a3;
+    outline: none;
+    font-size: 15px;
+    color: #2b1d07;
+    background: rgba(255, 255, 255, 0.95);
+    transition: box-shadow 0.15s ease;
+  }
+
+  .field input::placeholder { color: #9d8a67; }
+  .field input:focus,
+  .field select:focus { box-shadow: 0 0 0 3px rgba(192, 155, 88, 0.3); }
+  .field input:focus::placeholder { color: transparent; }
+
+  .pwdWrap { position: relative; margin-bottom: 6px; }
+  .pwdWrap input { padding-right: 44px; }
+
+  .eyeBtn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6a512a;
+  }
+
+  .btn {
+    width: 100%;
+    height: 46px;
+    margin-top: 10px;
+    margin-bottom: 18px;
+    background: #a38147;
+    color: #fff;
+    font-weight: bold;
+    font-size: 17px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .btn:hover { background: #8d6e3e; }
+
+  .forgot {
+    display: block;
+    margin-top: 45px;
+    color: #000;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  .cta {
+    margin-top: 10px;
+    color: #604a23;
+    font-size: 15px;
+  }
+
+  .cta a { font-weight: bold; color: #fff; text-decoration: none; }
+  .cta a:hover { text-decoration: underline; }
+
+  .msg { margin-top: 6px; color: #604a23; font-size: 14px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  @media (max-width: 480px) {
+    .glass { max-width: 420px; }
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 4px 0 6px;
+  }
+
+  .remember {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #3a2c1a;
+    cursor: pointer;
+  }
+
+  .remember input {
+    width: 16px;
+    height: 16px;
+    accent-color: #a38147;
+  }
+
+  .flip3d {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.8s ease;
+  }
+
+  .glass.isFlipped .flip3d { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    padding: 32px 28px;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: center;
+  }
+
+  .back { transform: rotateY(180deg); }
+
+  .g2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .formRegister {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .field, .pwdWrap {
+    margin: 0;
+  }
+
+  .errLine { min-height: 14px; line-height: 14px; }
+  .error { color: #c81e1e; font-size: 12px; display: inline-block; }
+`}</style>
